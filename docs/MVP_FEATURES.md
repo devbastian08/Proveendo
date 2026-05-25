@@ -1,25 +1,30 @@
-# MVP FEATURES
+# Funcionalidades del PMV ProvEEndo
 
-## Funcionalidades Iniciales
+## Login
+Acceso seguro para distribuidoras y tenderos, con roles diferenciados (administrador, conductor, tendero).
 
-### Gestión de Pedidos
-- Crear pedidos
-- Ver pedidos
-- Cambiar estados
-
-### Gestión de Productos
-- Crear productos
+## Productos
+Gestión básica de catálogo:
+- Agregar productos
 - Editar productos
-- Gestionar stock
+- Eliminar productos
+- Visualización de precios y existencias
 
-### Tenderos
-- Página simple de pedidos
-- Acceso mediante enlace de WhatsApp
+## Pedidos
+Registrar pedidos de tenderos con opción de editar antes de confirmar.
 
-### Entregas
-- Ver entregas
-- Actualizar estado
+## Estados de pedidos
+Estados:
+- En preparación
+- Preparado
+- En ruta
+- Entregado
 
-### Usuarios
-- Login
-- Roles
+## Página de tendero
+Página web simple para que el tendero vea productos y haga pedidos.
+
+## WhatsApp link
+Enlace directo para que el tendero pueda iniciar pedidos desde WhatsApp.
+
+## Entregas básicas
+Gestión de rutas de entrega y actualización de estados.
