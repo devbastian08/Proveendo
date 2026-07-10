@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id         Int       @id @default(autoincrement())
+  nombre     String
+  correo     String    @unique
+  contrasena String
+  rol        String
+  tendero    Tendero?
+}
+
+model Tendero {
+  id            Int      @id @default(autoincrement())
+  nombre_tienda String
+  direccion     String
+  telefono      String
+  usuarioId     Int?     @unique
+  usuario       Usuario? @relation(fields: [usuarioId], references: [id])
+  pedidos       Pedido[]
+}
+
+model Producto {
+  id             Int             @id @default(autoincrement())
+  nombre         String
+  precio         Float
+  stock          Int
+  categoria      String?
+  detallesPedido DetallePedido[]
+}
+
+model Pedido {
+  id         Int             @id @default(autoincrement())
+  tenderoId  Int
+  estado     String
+  total      Float
+  fecha      DateTime        @default(now())
+  tendero    Tendero         @relation(fields: [tenderoId], references: [id])
+  detalles   DetallePedido[]
+  entrega    Entrega?
+}
+
+model DetallePedido {
+  id         Int      @id @default(autoincrement())
+  pedidoId   Int
+  productoId Int
+  cantidad   Int
+  subtotal   Float
+  pedido     Pedido   @relation(fields: [pedidoId], references: [id])
+  producto   Producto @relation(fields: [productoId], references: [id])
+}
+
+model Entrega {
+  id          Int    @id @default(autoincrement())
+  pedidoId    Int    @unique
+  conductorId Int?
+  estado      String
+  pedido      Pedido @relation(fields: [pedidoId], references: [id])
+}
