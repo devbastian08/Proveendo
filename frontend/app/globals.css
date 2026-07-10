@@ -10,6 +10,12 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  --color-proveendo-light: #e2e8ce;
+  --color-proveendo-primary: #4a6c6f;
+  --color-proveendo-muted: #ad9baa;
+  --color-proveendo-accent: #56cbf9;
+  --color-proveendo-danger: #d62246;
 }
 
 @media (prefers-color-scheme: dark) {
