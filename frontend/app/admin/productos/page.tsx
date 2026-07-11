@@ -34,11 +34,17 @@ export default function ProductosPage() {
 
   const fetchProductos = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/productos');
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:3001/api/productos', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await res.json();
-      setProductos(data);
+      setProductos(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching productos:', err);
+      setProductos([]);
     } finally {
       setLoading(false);
     }

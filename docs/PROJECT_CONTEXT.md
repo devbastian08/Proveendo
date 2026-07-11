@@ -1,9 +1,9 @@
 # ProvEEndo - Contexto del Proyecto
 
 ## Descripción General
-ProvEEndo es una plataforma digital enfocada en mejorar la gestión de pedidos y la atención al cliente de distribuidoras de productos para tiendas de barrio en Neiva, Huila.
+ProvEEndo es una plataforma digital (SaaS / Multi-tenant) enfocada en permitir que múltiples distribuidoras de productos puedan crear su propia tienda pública para recibir pedidos y mejorar la atención a sus clientes (tiendas de barrio en Neiva, Huila).
 
-El sistema busca optimizar los procesos comerciales, logísticos y administrativos mediante una aplicación web y la integración con WhatsApp.
+El sistema busca optimizar los procesos comerciales, logísticos y administrativos mediante una aplicación web donde cada distribuidora tiene su propio inventario y enlace público integrado con WhatsApp.
 
 ## Problema Actual
 Actualmente los pedidos se realizan cuando el asesor visita físicamente la tienda.
@@ -37,4 +37,4 @@ Esto genera:
 - Mostrar promociones
 
 ## Objetivo General
-Desarrollar una plataforma que optimice la gestión de pedidos, inventario y entregas de distribuidoras.
+Desarrollar una plataforma multi-tenant que optimice la gestión de pedidos, inventario y entregas, permitiendo a múltiples distribuidoras operar de forma independiente en el mismo sistema.

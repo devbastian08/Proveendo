@@ -11,14 +11,38 @@ datasource db {
 }
 
 model Usuario {
-  id         Int       @id @default(autoincrement())
-  nombre     String
-  correo     String    @unique
-  contrasena String
-  rol        String
-  tendero    Tendero?
+  id                     Int            @id @default(autoincrement())
+  nombre                 String
+  correo                 String         @unique
+  contrasena             String
+  rol                    String         // Ej: "distribuidor", "admin", "asesor"
+  
+  // Relación si el usuario es DUEÑO
+  distribuidora          Distribuidora? @relation("DistribuidoraOwner")
+  
+  // Relación si el usuario TRABAJA para la distribuidora
+  distribuidoraTrabajoId Int?
+  distribuidoraTrabajo   Distribuidora? @relation("DistribuidoraEmpleados", fields: [distribuidoraTrabajoId], references: [id])
+  
+  tendero                Tendero?
 }
 
+model Distribuidora {
+  id          Int        @id @default(autoincrement())
+  nombre      String
+  slug        String     @unique // Para la URL amigable: /tienda/mi-distribuidora
+  telefono    String     // Teléfono de WhatsApp
+  
+  usuarioId   Int        @unique // Dueño
+  usuario     Usuario    @relation("DistribuidoraOwner", fields: [usuarioId], references: [id])
+  
+  empleados   Usuario[]  @relation("DistribuidoraEmpleados")
+  
+  productos   Producto[]
+  pedidos     Pedido[]
+}
+
+// Tendero representa al cliente final que compra en la tienda de la Distribuidora
 model Tendero {
   id            Int      @id @default(autoincrement())
   nombre_tienda String
@@ -30,24 +54,35 @@ model Tendero {
 }
 
 model Producto {
-  id             Int             @id @default(autoincrement())
-  nombre         String
-  precio         Float
-  stock          Int
-  categoria      String?
-  detallesPedido DetallePedido[]
-  imagenUrl      String?
+  id               Int             @id @default(autoincrement())
+  nombre           String
+  precio           Float
+  stock            Int
+  categoria        String?
+  imagenUrl        String?
+  distribuidoraId  Int
+  distribuidora    Distribuidora   @relation(fields: [distribuidoraId], references: [id])
+  detallesPedido   DetallePedido[]
 }
 
 model Pedido {
-  id         Int             @id @default(autoincrement())
-  tenderoId  Int
-  estado     String
-  total      Float
-  fecha      DateTime        @default(now())
-  tendero    Tendero         @relation(fields: [tenderoId], references: [id])
-  detalles   DetallePedido[]
-  entrega    Entrega?
+  id              Int             @id @default(autoincrement())
+  distribuidoraId Int
+  tenderoId       Int?            // Opcional si permitimos checkout como invitado
+  estado          String
+  total           Float
+  fecha           DateTime        @default(now())
+  
+  distribuidora   Distribuidora   @relation(fields: [distribuidoraId], references: [id])
+  tendero         Tendero?        @relation(fields: [tenderoId], references: [id])
+  
+  detalles        DetallePedido[]
+  entrega         Entrega?
+  
+  // Datos del cliente si hace checkout sin estar registrado como Tendero formal
+  nombreCliente   String?
+  telefonoCliente String?
+  direccionEnvio  String?
 }
 
 model DetallePedido {

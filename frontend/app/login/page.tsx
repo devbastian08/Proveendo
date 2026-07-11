@@ -36,7 +36,9 @@ export default function LoginPage() {
       localStorage.setItem('user', JSON.stringify(data.user));
 
       // Redirección basada en ROLES (RBAC)
-      if (data.user.rol === 'administrador') {
+      if (data.user.rol === 'superadmin') {
+        router.push('/admin/saas');
+      } else if (data.user.rol === 'administrador' || data.user.rol === 'distribuidor') {
         router.push('/admin/productos');
       } else {
         router.push('/admin/pedidos');

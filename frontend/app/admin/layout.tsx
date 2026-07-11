@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Package, ShoppingCart, LogOut, Menu, X, Users } from 'lucide-react';
+import { Package, ShoppingCart, LogOut, Menu, X, Users, Store } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -34,22 +34,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Definimos las rutas y quién tiene acceso a cada una según USER_ROLES.md
   const menuItems = [
     {
+      title: 'Mis Clientes (SaaS)',
+      icon: <Store className="w-5 h-5" />,
+      href: '/admin/saas',
+      roles: ['superadmin']
+    },
+    {
       title: 'Inventario',
       icon: <Package className="w-5 h-5" />,
       href: '/admin/productos',
-      roles: ['administrador']
+      roles: ['administrador', 'distribuidor']
     },
     {
       title: 'Pedidos',
       icon: <ShoppingCart className="w-5 h-5" />,
       href: '/admin/pedidos',
-      roles: ['administrador', 'asesor']
+      roles: ['administrador', 'asesor', 'distribuidor']
     },
     {
       title: 'Clientes (Pronto)',
       icon: <Users className="w-5 h-5" />,
       href: '#', 
       roles: ['administrador', 'asesor']
+    },
+    {
+      title: 'Ajustes de Tienda',
+      icon: <Users className="w-5 h-5" />,
+      href: '/admin/ajustes', 
+      roles: ['administrador', 'distribuidor']
+    },
+    {
+      title: 'Equipo',
+      icon: <Users className="w-5 h-5" />,
+      href: '/admin/equipo',
+      roles: ['administrador', 'distribuidor']
     }
   ];
 

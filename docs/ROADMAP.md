@@ -1,17 +1,18 @@
 # Roadmap del Proyecto
 
 ## Fase 1
-- Estructura del proyecto
-- Base de datos
-- Login
+- [x] Estructura del proyecto
+- [x] Base de datos
+- [x] Login
 
 ## Fase 2
-- Gestión de productos
-- Gestión de pedidos
+- [x] Gestión de productos
+- [x] Gestión de pedidos
 
 ## Fase 3
-- Página tendero
-- Integración WhatsApp
+- Arquitectura Multi-Tenant (Múltiples Distribuidoras)
+- Tienda Pública (`/tienda/[slug]`)
+- Integración WhatsApp (Checkout)
 
 ## Fase 4
 - Entregas

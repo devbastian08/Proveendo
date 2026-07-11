@@ -1,7 +1,7 @@
 # Funcionalidades del PMV ProvEEndo
 
 ## Login
-Acceso seguro para distribuidoras y tenderos, con roles diferenciados (administrador, conductor, tendero).
+Acceso seguro para distribuidoras (vendedores) y otros roles (administrador global, conductor). Los tenderos (compradores) pueden comprar mediante un modelo sin fricción (sin login) o registro opcional.
 
 ## Productos
 Gestión básica de catálogo:
@@ -20,8 +20,8 @@ Estados:
 - En ruta
 - Entregado
 
-## Página de tendero
-Página web simple para que el tendero vea productos y haga pedidos.
+## Tienda Pública de Distribuidora (Catálogo)
+Página web dinámica (`/tienda/[slug]`) para que la distribuidora exhiba su catálogo. El tendero puede ver productos, armar su carrito y hacer pedidos sin fricción.
 
 ## WhatsApp link
 Enlace directo para que el tendero pueda iniciar pedidos desde WhatsApp.
