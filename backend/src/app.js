@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
+const rateLimit = require('express-rate-limit');
 
 const prisma = new PrismaClient();
 const app = express();
@@ -15,12 +16,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecreto123';
 const ORDER_STATUSES = ['pendiente', 'en_preparacion', 'preparado', 'en_ruta', 'entregado'];
 
 // Middleware de autenticación
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'No autorizado' });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await prisma.usuario.findUnique({ where: { id: decoded.id } });
+    if (!user) return res.status(401).json({ error: 'Usuario ya no existe' });
     req.user = decoded;
     next();
   } catch (error) {
@@ -64,7 +67,13 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // 5 intentos
+  message: { error: 'Demasiados intentos de inicio de sesión. Por favor, intenta de nuevo en 15 minutos.' }
+});
+
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
   const { correo, contrasena } = req.body;
   
   try {
@@ -641,11 +650,16 @@ app.post('/api/pedidos', async (req, res) => {
   try {
     let total = 0;
     const detalles = [];
+    const transacciones = [];
     
     for (const item of items) {
       const producto = await prisma.producto.findUnique({ where: { id: item.productoId } });
       if (!producto || producto.distribuidoraId !== distribuidoraId) {
         throw new Error(`Producto ${item.productoId} no es válido`);
+      }
+      
+      if (item.cantidad > producto.stock) {
+        throw new Error(`No hay suficiente stock para el producto: ${producto.nombre} (Stock: ${producto.stock})`);
       }
       
       const subtotal = item.cantidad * producto.precio;
@@ -655,21 +669,35 @@ app.post('/api/pedidos', async (req, res) => {
         cantidad: item.cantidad,
         subtotal
       });
+
+      transacciones.push(
+        prisma.producto.update({
+          where: { id: producto.id },
+          data: { stock: { decrement: item.cantidad } }
+        })
+      );
     }
 
-    const pedido = await prisma.pedido.create({
-      data: {
-        distribuidoraId,
-        estado: 'en_preparacion',
-        total,
-        nombreCliente,
-        telefonoCliente,
-        direccionEnvio,
-        detalles: { create: detalles },
-        entrega: { create: { estado: 'en_preparacion' } }
-      },
-      include: { detalles: true, entrega: true }
-    });
+    const pedidoData = {
+      distribuidoraId,
+      estado: 'en_preparacion',
+      total,
+      nombreCliente,
+      telefonoCliente,
+      direccionEnvio,
+      detalles: { create: detalles },
+      entrega: { create: { estado: 'en_preparacion' } }
+    };
+
+    transacciones.push(
+      prisma.pedido.create({
+        data: pedidoData,
+        include: { detalles: true, entrega: true }
+      })
+    );
+
+    const resultados = await prisma.$transaction(transacciones);
+    const pedido = resultados[resultados.length - 1]; // El pedido es el último objeto de la transacción
 
     return res.status(201).json(pedido);
   } catch (error) {
