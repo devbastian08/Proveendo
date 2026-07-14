@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, UserPlus, Users, AlertCircle, Shield } from 'lucide-react';
+import { Loader2, UserPlus, Users, AlertCircle, Shield, Edit2, PackageSearch } from 'lucide-react';
 
 interface Miembro {
   id: number;
   nombre: string;
   correo: string;
   rol: string;
+  puedeAlistar: boolean;
 }
 
 export default function EquipoPage() {
@@ -20,6 +21,8 @@ export default function EquipoPage() {
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [rol, setRol] = useState('asesor'); // Por defecto creamos asesores
+  const [puedeAlistar, setPuedeAlistar] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   
   const [error, setError] = useState('');
 
@@ -52,13 +55,19 @@ export default function EquipoPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3001/api/equipo', {
-        method: 'POST',
+      const url = editingId ? `http://localhost:3001/api/equipo/${editingId}` : 'http://localhost:3001/api/equipo';
+      const method = editingId ? 'PATCH' : 'POST';
+      
+      const payload: any = { nombre, correo, rol, puedeAlistar };
+      if (contrasena) payload.contrasena = contrasena;
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ nombre, correo, contrasena, rol })
+        body: JSON.stringify(payload)
       });
       
       const data = await res.json();
@@ -71,12 +80,32 @@ export default function EquipoPage() {
       setNombre('');
       setCorreo('');
       setContrasena('');
+      setPuedeAlistar(false);
       fetchEquipo(); // Refrescar lista
       
     } catch (err: any) {
       setError(err.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const toggleAlistar = async (miembro: Miembro) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:3001/api/equipo/${miembro.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ puedeAlistar: !miembro.puedeAlistar })
+      });
+      if (res.ok) {
+        fetchEquipo();
+      }
+    } catch (error) {
+      console.error('Error toggling puedeAlistar', error);
     }
   };
 
@@ -118,6 +147,7 @@ export default function EquipoPage() {
                   <th className="px-6 py-4 font-medium">Nombre</th>
                   <th className="px-6 py-4 font-medium">Correo</th>
                   <th className="px-6 py-4 font-medium">Rol</th>
+                  <th className="px-6 py-4 font-medium text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -127,8 +157,26 @@ export default function EquipoPage() {
                     <td className="px-6 py-4 text-slate-600">{miembro.correo}</td>
                     <td className="px-6 py-4">
                       <span className="flex items-center gap-1 w-fit px-3 py-1 bg-[#e2e8ce]/50 text-[#4a6c6f] font-bold text-xs rounded-full capitalize">
-                        <Shield className="w-3 h-3" /> {miembro.rol}
+                        <Shield className="w-3 h-3" /> {miembro.rol} {miembro.rol === 'asesor' && miembro.puedeAlistar && '(Alista)'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => {
+                          setEditingId(miembro.id);
+                          setNombre(miembro.nombre);
+                          setCorreo(miembro.correo);
+                          setRol(miembro.rol);
+                          setPuedeAlistar(miembro.puedeAlistar || false);
+                          setContrasena('');
+                          setIsModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-[#4a6c6f] hover:bg-slate-100 rounded-lg transition-colors font-medium text-sm border border-transparent hover:border-slate-200 ml-auto"
+                        title="Editar datos"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Editar
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -140,11 +188,11 @@ export default function EquipoPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => { setIsModalOpen(false); setEditingId(null); setNombre(''); setCorreo(''); setContrasena(''); }}></div>
           <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
             <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
               <UserPlus className="w-6 h-6 text-[#4a6c6f]" />
-              Crear Nuevo Usuario
+              {editingId ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
             </h2>
             
             <form onSubmit={handleCreate} className="space-y-4">
@@ -176,11 +224,11 @@ export default function EquipoPage() {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
                 <input
                   type="text"
-                  required
+                  required={!editingId}
                   value={contrasena}
                   onChange={e => setContrasena(e.target.value)}
                   className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
-                  placeholder="Asigna una contraseña segura"
+                  placeholder={editingId ? 'Déjalo en blanco para no cambiarla' : 'Asigna una contraseña segura'}
                 />
               </div>
 
@@ -196,6 +244,21 @@ export default function EquipoPage() {
                 </select>
               </div>
 
+              {rol === 'asesor' && (
+                <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={puedeAlistar}
+                    onChange={(e) => setPuedeAlistar(e.target.checked)}
+                    className="w-5 h-5 rounded text-[#4a6c6f] focus:ring-[#4a6c6f] border-slate-300"
+                  />
+                  <div>
+                    <div className="text-sm font-bold text-slate-800">Permitir Alistamiento (Bodega)</div>
+                    <div className="text-xs text-slate-500">Este asesor podrá ver y cambiar el estado de los pedidos.</div>
+                  </div>
+                </label>
+              )}
+
               {error && (
                 <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 text-sm rounded-lg">
                   <AlertCircle className="w-4 h-4" />
@@ -206,7 +269,7 @@ export default function EquipoPage() {
               <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); setEditingId(null); setNombre(''); setCorreo(''); setContrasena(''); }}
                   className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg"
                 >
                   Cancelar
@@ -217,7 +280,7 @@ export default function EquipoPage() {
                   className="flex items-center gap-2 px-4 py-2 bg-[#4a6c6f] hover:bg-[#3a5658] disabled:opacity-70 text-white rounded-lg font-medium"
                 >
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isSubmitting ? 'Creando...' : 'Crear Usuario'}
+                  {isSubmitting ? 'Guardando...' : (editingId ? 'Guardar Cambios' : 'Crear Usuario')}
                 </button>
               </div>
             </form>

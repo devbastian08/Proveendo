@@ -27,6 +27,7 @@ async function main() {
     create: {
       nombre: 'La Gran Distribuidora',
       slug: 'gran-distribuidora',
+      descripcion: 'Distribuidores mayoristas de abarrotes, granos y productos de aseo al mejor precio.',
       telefono: '573001234567',
       usuarioId: distUser1.id
     }
@@ -76,6 +77,32 @@ async function main() {
     }
   });
 
+  // Usuario Conductor de Prueba (Fase 4)
+  const conductorUser = await prisma.usuario.upsert({
+    where: { correo: 'conductor@distribuidora.com' },
+    update: {},
+    create: {
+      nombre: 'Juan Conductor',
+      correo: 'conductor@distribuidora.com',
+      contrasena: hashedPassword,
+      rol: 'conductor',
+      distribuidoraTrabajoId: distribuidora1.id
+    }
+  });
+
+  // Usuario Asesor de Prueba (Ventas)
+  const asesorUser = await prisma.usuario.upsert({
+    where: { correo: 'asesor@distribuidora.com' },
+    update: {},
+    create: {
+      nombre: 'María Asesora',
+      correo: 'asesor@distribuidora.com',
+      contrasena: hashedPassword,
+      rol: 'asesor',
+      distribuidoraTrabajoId: distribuidora1.id
+    }
+  });
+
   console.log('Usuarios de prueba creados exitosamente:');
   console.log('---');
   console.log('👑 PANEL SUPERADMIN (Tú):');
@@ -84,6 +111,14 @@ async function main() {
   console.log('---');
   console.log('📝 PANEL DE DISTRIBUIDORA (Tus clientes):');
   console.log('👉 Correo: ventas@distribuidora.com');
+  console.log('👉 Contraseña: admin123');
+  console.log('---');
+  console.log('🤝 PANEL DE ASESOR (Fuerza de ventas):');
+  console.log('👉 Correo: asesor@distribuidora.com');
+  console.log('👉 Contraseña: admin123');
+  console.log('---');
+  console.log('🚚 PANEL DE CONDUCTOR (Logística):');
+  console.log('👉 Correo: conductor@distribuidora.com');
   console.log('👉 Contraseña: admin123');
   console.log('---');
   console.log('🛒 ENLACE PÚBLICO DE LA TIENDA (Para el tendero):');

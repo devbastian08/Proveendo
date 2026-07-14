@@ -12,7 +12,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecreto123';
-const ORDER_STATUSES = ['en_preparacion', 'preparado', 'en_ruta', 'entregado'];
+const ORDER_STATUSES = ['pendiente', 'en_preparacion', 'preparado', 'en_ruta', 'entregado'];
 
 // Middleware de autenticación
 const authMiddleware = (req, res, next) => {
@@ -75,7 +75,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!match) return res.status(401).json({ error: 'Contraseña incorrecta' });
 
     const token = jwt.sign({ id: user.id, rol: user.rol }, JWT_SECRET, { expiresIn: '1d' });
-    res.json({ token, user: { id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol } });
+    res.json({ token, user: { id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol, puedeAlistar: user.puedeAlistar } });
   } catch (error) {
     res.status(500).json({ error: 'Error al iniciar sesión' });
   }
@@ -109,6 +109,24 @@ app.get('/api/productos', authMiddleware, async (req, res) => {
     where: { distribuidoraId: distribuidora.id }
   });
   res.json(productos);
+});
+
+// Catálogo para el Asesor
+app.get('/api/asesor/catalogo', authMiddleware, async (req, res) => {
+  const distribuidora = await getMyDistribuidora(req.user.id);
+  if (!distribuidora) return res.status(404).json({ error: 'No tienes una distribuidora asignada' });
+
+  const productos = await prisma.producto.findMany({
+    where: { distribuidoraId: distribuidora.id, stock: { gt: 0 } } // Opcional: Solo con stock
+  });
+  
+  res.json({
+    distribuidora: {
+      id: distribuidora.id,
+      nombre: distribuidora.nombre
+    },
+    productos
+  });
 });
 
 app.post('/api/productos', authMiddleware, async (req, res) => {
@@ -188,13 +206,24 @@ app.delete('/api/productos/:id', authMiddleware, async (req, res) => {
 });
 
 app.get('/api/pedidos', authMiddleware, async (req, res) => {
+  const userDetails = await prisma.usuario.findUnique({ where: { id: req.user.id } });
+  
+  if (req.user.rol !== 'distribuidor' && req.user.rol !== 'administrador') {
+    if (!(req.user.rol === 'asesor' && userDetails?.puedeAlistar)) {
+      return res.status(403).json({ error: 'No tienes permiso para ver los pedidos de la bodega' });
+    }
+  }
+
   const distribuidora = await getMyDistribuidora(req.user.id);
   if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
 
   try {
     const pedidos = await prisma.pedido.findMany({
       where: { distribuidoraId: distribuidora.id },
-      include: { detalles: { include: { producto: true } }, entrega: true },
+      include: { 
+        detalles: { include: { producto: true } }, 
+        entrega: { include: { conductor: true } }
+      },
       orderBy: { fecha: 'desc' }
     });
     res.json(pedidos);
@@ -205,10 +234,18 @@ app.get('/api/pedidos', authMiddleware, async (req, res) => {
 
 app.patch('/api/pedidos/:id/estado', authMiddleware, async (req, res) => {
   const pedidoId = Number(req.params.id);
-  const { estado } = req.body;
+  const { estado, motivoReactivacion } = req.body;
 
   if (!ORDER_STATUSES.includes(estado)) {
     return res.status(400).json({ error: `Estado inválido. Usa: ${ORDER_STATUSES.join(', ')}` });
+  }
+
+  const userDetails = await prisma.usuario.findUnique({ where: { id: req.user.id } });
+  
+  if (req.user.rol !== 'distribuidor' && req.user.rol !== 'administrador') {
+    if (!(req.user.rol === 'asesor' && userDetails?.puedeAlistar)) {
+      return res.status(403).json({ error: 'No tienes permiso para modificar los pedidos' });
+    }
   }
   
   const distribuidora = await getMyDistribuidora(req.user.id);
@@ -220,9 +257,26 @@ app.patch('/api/pedidos/:id/estado', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Pedido no encontrado' });
     }
 
+    if (req.user.rol === 'asesor') {
+      if (estado === 'pendiente') {
+        return res.status(403).json({ error: 'Solo el administrador puede reactivar pedidos' });
+      }
+      if (estado === 'entregado') {
+        return res.status(403).json({ error: 'Solo el administrador o el conductor pueden marcar un pedido como entregado' });
+      }
+      if (existing.estado === 'entregado') {
+        return res.status(403).json({ error: 'No puedes modificar un pedido que ya está entregado' });
+      }
+    }
+
+    const dataToUpdate = { estado };
+    if (estado === 'pendiente' && motivoReactivacion) {
+      dataToUpdate.motivoReactivacion = motivoReactivacion;
+    }
+
     const pedido = await prisma.pedido.update({
       where: { id: pedidoId },
-      data: { estado }
+      data: dataToUpdate
     });
 
     if (existing.entrega) {
@@ -238,6 +292,103 @@ app.patch('/api/pedidos/:id/estado', authMiddleware, async (req, res) => {
   }
 });
 
+app.patch('/api/pedidos/:id/asignar', authMiddleware, async (req, res) => {
+  const pedidoId = Number(req.params.id);
+  const { conductorId } = req.body;
+  
+  const userDetails = await prisma.usuario.findUnique({ where: { id: req.user.id } });
+  
+  if (req.user.rol !== 'distribuidor' && req.user.rol !== 'administrador') {
+    if (!(req.user.rol === 'asesor' && userDetails?.puedeAlistar)) {
+      return res.status(403).json({ error: 'No tienes permiso para despachar pedidos' });
+    }
+  }
+
+  const distribuidora = await getMyDistribuidora(req.user.id);
+  if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
+
+  try {
+    const existing = await prisma.pedido.findUnique({ where: { id: pedidoId }, include: { entrega: true } });
+    if (!existing || existing.distribuidoraId !== distribuidora.id) {
+      return res.status(404).json({ error: 'Pedido no encontrado' });
+    }
+
+    if (existing.estado !== 'preparado') {
+      return res.status(400).json({ error: 'El pedido debe estar preparado antes de asignarlo' });
+    }
+
+    // Actualizamos el pedido a en_ruta y le asignamos el conductor a la entrega
+    await prisma.pedido.update({
+      where: { id: pedidoId },
+      data: { estado: 'en_ruta' }
+    });
+
+    if (existing.entrega) {
+      await prisma.entrega.update({
+        where: { pedidoId },
+        data: { estado: 'en_ruta', conductorId }
+      });
+    }
+
+    return res.json({ success: true, message: 'Conductor asignado y en ruta' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Error interno al asignar' });
+  }
+});
+
+// Rutas de Conductor (Logística Fase 4)
+app.get('/api/conductor/entregas', authMiddleware, async (req, res) => {
+  if (req.user.rol !== 'conductor') {
+    return res.status(403).json({ error: 'Solo para conductores' });
+  }
+
+  try {
+    const entregas = await prisma.entrega.findMany({
+      where: { conductorId: req.user.id, estado: 'en_ruta' },
+      include: { 
+        pedido: {
+          include: {
+            detalles: { include: { producto: true } }
+          }
+        } 
+      },
+      orderBy: { id: 'asc' }
+    });
+    return res.json(entregas);
+  } catch (error) {
+    return res.status(500).json({ error: 'Error al obtener entregas' });
+  }
+});
+
+app.patch('/api/conductor/entregas/:pedidoId/entregado', authMiddleware, async (req, res) => {
+  if (req.user.rol !== 'conductor') {
+    return res.status(403).json({ error: 'Solo para conductores' });
+  }
+
+  const pedidoId = Number(req.params.pedidoId);
+
+  try {
+    const entrega = await prisma.entrega.findUnique({ where: { pedidoId } });
+    if (!entrega || entrega.conductorId !== req.user.id) {
+      return res.status(404).json({ error: 'Entrega no encontrada o no asignada a ti' });
+    }
+
+    await prisma.entrega.update({
+      where: { pedidoId },
+      data: { estado: 'entregado' }
+    });
+
+    await prisma.pedido.update({
+      where: { id: pedidoId },
+      data: { estado: 'entregado' }
+    });
+
+    return res.json({ success: true, message: 'Pedido marcado como entregado' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Error interno' });
+  }
+});
+
 // Ajustes de Distribuidora
 app.get('/api/distribuidora', authMiddleware, async (req, res) => {
   const distribuidora = await getMyDistribuidora(req.user.id);
@@ -246,7 +397,7 @@ app.get('/api/distribuidora', authMiddleware, async (req, res) => {
 });
 
 app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
-  const { nombre, slug, telefono } = req.body;
+  const { nombre, slug, telefono, descripcion } = req.body;
   
   const distribuidora = await getMyDistribuidora(req.user.id);
   if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
@@ -269,7 +420,8 @@ app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
       data: {
         nombre: nombre || distribuidora.nombre,
         slug: nuevoSlug,
-        telefono: telefono || distribuidora.telefono
+        telefono: telefono || distribuidora.telefono,
+        descripcion: descripcion !== undefined ? descripcion : distribuidora.descripcion
       }
     });
     return res.json(updated);
@@ -280,8 +432,12 @@ app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
 
 // Gestión de Equipo (Asesores)
 app.get('/api/equipo', authMiddleware, async (req, res) => {
+  const userDetails = await prisma.usuario.findUnique({ where: { id: req.user.id } });
+  
   if (req.user.rol !== 'distribuidor' && req.user.rol !== 'administrador') {
-    return res.status(403).json({ error: 'No tienes permiso para ver el equipo' });
+    if (!(req.user.rol === 'asesor' && userDetails?.puedeAlistar)) {
+      return res.status(403).json({ error: 'No tienes permiso para ver el equipo' });
+    }
   }
 
   const distribuidora = await getMyDistribuidora(req.user.id);
@@ -289,7 +445,7 @@ app.get('/api/equipo', authMiddleware, async (req, res) => {
 
   const equipo = await prisma.usuario.findMany({
     where: { distribuidoraTrabajoId: distribuidora.id },
-    select: { id: true, nombre: true, correo: true, rol: true }
+    select: { id: true, nombre: true, correo: true, rol: true, puedeAlistar: true }
   });
   res.json(equipo);
 });
@@ -299,7 +455,7 @@ app.post('/api/equipo', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'No tienes permiso para agregar equipo' });
   }
 
-  const { nombre, correo, contrasena, rol } = req.body;
+  const { nombre, correo, contrasena, rol, puedeAlistar } = req.body;
   if (!nombre || !correo || !contrasena || !rol) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
@@ -315,13 +471,51 @@ app.post('/api/equipo', authMiddleware, async (req, res) => {
         correo,
         contrasena: hashed,
         rol,
+        puedeAlistar: puedeAlistar || false,
         distribuidoraTrabajoId: distribuidora.id
       },
-      select: { id: true, nombre: true, correo: true, rol: true }
+      select: { id: true, nombre: true, correo: true, rol: true, puedeAlistar: true }
     });
     return res.status(201).json(user);
   } catch (error) {
     return res.status(400).json({ error: 'Error al crear usuario (¿correo duplicado?)' });
+  }
+});
+
+app.patch('/api/equipo/:id', authMiddleware, async (req, res) => {
+  if (req.user.rol !== 'distribuidor' && req.user.rol !== 'administrador') {
+    return res.status(403).json({ error: 'No tienes permiso para modificar equipo' });
+  }
+
+  const { puedeAlistar, rol, nombre, correo, contrasena } = req.body;
+  const distribuidora = await getMyDistribuidora(req.user.id);
+  if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
+
+  try {
+    const existing = await prisma.usuario.findUnique({ where: { id: Number(req.params.id) } });
+    if (!existing || existing.distribuidoraTrabajoId !== distribuidora.id) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const dataToUpdate = {
+      puedeAlistar: puedeAlistar !== undefined ? puedeAlistar : existing.puedeAlistar,
+      rol: rol || existing.rol,
+      nombre: nombre || existing.nombre,
+      correo: correo || existing.correo
+    };
+
+    if (contrasena) {
+      dataToUpdate.contrasena = await bcrypt.hash(contrasena, 10);
+    }
+
+    const updated = await prisma.usuario.update({
+      where: { id: Number(req.params.id) },
+      data: dataToUpdate,
+      select: { id: true, nombre: true, correo: true, rol: true, puedeAlistar: true }
+    });
+    return res.json(updated);
+  } catch (error) {
+    return res.status(500).json({ error: 'Error al actualizar usuario' });
   }
 });
 
@@ -381,6 +575,33 @@ app.post('/api/superadmin/distribuidoras', authMiddleware, async (req, res) => {
 });
 
 // Rutas Públicas (Página Tendero)
+app.get('/api/tiendas/directorio', async (req, res) => {
+  try {
+    // Solo mostramos las que tengan productos para no mostrar tiendas vacías
+    const tiendas = await prisma.distribuidora.findMany({
+      where: { productos: { some: {} } },
+      include: {
+        _count: { select: { productos: true } }
+      }
+    });
+    
+    // Mapeamos para enviar un payload limpio
+    const directorio = tiendas.map(t => ({
+      id: t.id,
+      nombre: t.nombre,
+      slug: t.slug,
+      descripcion: t.descripcion,
+      logoUrl: t.logoUrl,
+      portadaUrl: t.portadaUrl,
+      productosCount: t._count.productos
+    }));
+
+    return res.json(directorio);
+  } catch (error) {
+    return res.status(500).json({ error: 'Error al obtener directorio de tiendas' });
+  }
+});
+
 app.get('/api/tienda/:slug', async (req, res) => {
   const { slug } = req.params;
   

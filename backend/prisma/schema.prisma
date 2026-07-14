@@ -16,6 +16,7 @@ model Usuario {
   correo                 String         @unique
   contrasena             String
   rol                    String         // Ej: "distribuidor", "admin", "asesor"
+  puedeAlistar           Boolean        @default(false)
   
   // Relación si el usuario es DUEÑO
   distribuidora          Distribuidora? @relation("DistribuidoraOwner")
@@ -25,12 +26,16 @@ model Usuario {
   distribuidoraTrabajo   Distribuidora? @relation("DistribuidoraEmpleados", fields: [distribuidoraTrabajoId], references: [id])
   
   tendero                Tendero?
+  entregas               Entrega[]
 }
 
 model Distribuidora {
   id          Int        @id @default(autoincrement())
   nombre      String
   slug        String     @unique // Para la URL amigable: /tienda/mi-distribuidora
+  descripcion String?
+  logoUrl     String?
+  portadaUrl  String?
   telefono    String     // Teléfono de WhatsApp
   
   usuarioId   Int        @unique // Dueño
@@ -69,9 +74,10 @@ model Pedido {
   id              Int             @id @default(autoincrement())
   distribuidoraId Int
   tenderoId       Int?            // Opcional si permitimos checkout como invitado
-  estado          String
+  estado          String          @default("pendiente") // pendiente, preparado, en_ruta, entregado
   total           Float
   fecha           DateTime        @default(now())
+  motivoReactivacion String?      // Para guardar el motivo cuando un pedido entregado es devuelto a pendiente
   
   distribuidora   Distribuidora   @relation(fields: [distribuidoraId], references: [id])
   tendero         Tendero?        @relation(fields: [tenderoId], references: [id])
@@ -96,9 +102,10 @@ model DetallePedido {
 }
 
 model Entrega {
-  id          Int    @id @default(autoincrement())
-  pedidoId    Int    @unique
+  id          Int      @id @default(autoincrement())
+  pedidoId    Int      @unique
   conductorId Int?
   estado      String
-  pedido      Pedido @relation(fields: [pedidoId], references: [id])
+  pedido      Pedido   @relation(fields: [pedidoId], references: [id])
+  conductor   Usuario? @relation(fields: [conductorId], references: [id])
 }

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Loader2, ShoppingCart, Plus, Minus, Store, Phone, MapPin, CheckCircle, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, ShoppingCart, Plus, Minus, Store, Phone, MapPin, CheckCircle, Trash2, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 
 interface Producto {
@@ -172,15 +173,20 @@ export default function TiendaPage() {
       {/* Header Distribuidora */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-[#e2e8ce] text-[#4a6c6f] rounded-full flex items-center justify-center font-bold text-xl">
-              {distribuidora.nombre.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h1 className="font-bold text-slate-900 text-lg leading-tight">{distribuidora.nombre}</h1>
-              <p className="text-sm text-slate-500 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3 text-emerald-500" /> Distribuidor Autorizado
-              </p>
+          <div className="flex items-center gap-4">
+            <Link href="/tiendas" className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors hidden sm:block">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#e2e8ce] text-[#4a6c6f] rounded-full flex items-center justify-center font-bold text-xl">
+                {distribuidora.nombre.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h1 className="font-bold text-slate-900 text-lg leading-tight">{distribuidora.nombre}</h1>
+                <p className="text-sm text-slate-500 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3 text-emerald-500" /> Distribuidor Autorizado
+                </p>
+              </div>
             </div>
           </div>
           

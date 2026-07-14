@@ -40,6 +40,10 @@ export default function LoginPage() {
         router.push('/admin/saas');
       } else if (data.user.rol === 'administrador' || data.user.rol === 'distribuidor') {
         router.push('/admin/productos');
+      } else if (data.user.rol === 'asesor') {
+        router.push('/asesor');
+      } else if (data.user.rol === 'conductor') {
+        router.push('/conductor');
       } else {
         router.push('/admin/pedidos');
       }
