@@ -12,7 +12,14 @@ async function main() {
   console.log('Borrando Pedidos...');
   await prisma.pedido.deleteMany({});
   
-  console.log('Todos los pedidos han sido eliminados.');
+  console.log('Reiniciando el contador de pedidos (id) a 1...');
+  try {
+    await prisma.$executeRawUnsafe(`ALTER SEQUENCE "Pedido_id_seq" RESTART WITH 1;`);
+  } catch (e) {
+    console.log('No se pudo reiniciar la secuencia, puede que el nombre de la tabla varíe según la BD.');
+  }
+  
+  console.log('Todos los pedidos han sido eliminados y el contador reiniciado.');
 }
 
 main()

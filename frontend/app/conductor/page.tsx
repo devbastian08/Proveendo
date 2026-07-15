@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2, PhoneCall, Navigation, PackageOpen, ListOrdered, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -12,6 +12,8 @@ interface Entrega {
     nombreCliente: string | null;
     telefonoCliente: string | null;
     direccionEnvio: string | null;
+    latitud: number | null;
+    longitud: number | null;
     total: number;
     detalles: any[];
   };
@@ -140,38 +142,61 @@ export default function ConductorPage() {
               </div>
 
               {/* Botones de Acción (Llamar / Mapas) */}
-              <div className="px-5 pb-5 grid grid-cols-2 gap-3">
+              <div className="px-5 pb-5">
                 <a 
                   href={`tel:${entrega.pedido.telefonoCliente}`}
-                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-2xl font-bold transition-colors"
+                  className="flex w-full items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-2xl font-bold transition-colors mb-3"
                 >
-                  <PhoneCall className="w-5 h-5" /> Llamar
+                  <PhoneCall className="w-5 h-5" /> Llamar Cliente
                 </a>
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.pedido.direccionEnvio || '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 py-3 rounded-2xl font-bold transition-colors"
-                >
-                  <Navigation className="w-5 h-5" /> Ir allá
-                </a>
+                
+                <div className="bg-slate-50 p-4 border-t border-slate-100 flex gap-3 rounded-2xl">
+                  <button 
+                    onClick={() => {
+                      // Construir enlace de ruta
+                      const destLat = entrega.pedido.latitud;
+                      const destLng = entrega.pedido.longitud;
+                      
+                      let mapsUrl = '';
+                      if (destLat && destLng) {
+                        // Si hay GPS, construimos la ruta
+                        mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}`;
+                        
+                        // Si no es la primera entrega, usamos la entrega anterior como origen para dibujar la ruta continua
+                        if (index > 0) {
+                          const prevLat = entregas[index - 1].pedido.latitud;
+                          const prevLng = entregas[index - 1].pedido.longitud;
+                          if (prevLat && prevLng) {
+                            mapsUrl += `&origin=${prevLat},${prevLng}`;
+                          }
+                        }
+                      } else {
+                        // Búsqueda por texto fallback
+                        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.pedido.direccionEnvio || '')}`;
+                      }
+                      
+                      window.open(mapsUrl, '_blank');
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 py-3 rounded-xl font-bold transition-colors"
+                  >
+                    <Navigation className="w-5 h-5" />
+                    📍 Navegar Mapa
+                  </button>
+                  
+                  <button 
+                    onClick={() => marcarEntregado(entrega.pedidoId)}
+                    disabled={actionLoadingId === entrega.pedidoId}
+                    className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition-colors disabled:opacity-50"
+                  >
+                    {actionLoadingId === entrega.pedidoId ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-5 h-5" />
+                    )}
+                    Entregado
+                  </button>
+                </div>
               </div>
-
-              {/* Gran botón de entrega */}
-              <button 
-                onClick={() => marcarEntregado(entrega.pedidoId)}
-                disabled={actionLoadingId === entrega.pedidoId}
-                className="w-full bg-[#25D366] hover:bg-[#128C7E] disabled:opacity-50 text-white py-4 font-black text-lg flex items-center justify-center gap-2 transition-colors"
-              >
-                {actionLoadingId === entrega.pedidoId ? (
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-6 h-6" /> 
-                    Confirmar Entrega
-                  </>
-                )}
-              </button>
             </div>
           ))}
         </div>

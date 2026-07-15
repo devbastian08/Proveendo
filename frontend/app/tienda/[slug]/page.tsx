@@ -39,9 +39,14 @@ export default function TiendaPage() {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Formulario de checkout
-  const [nombreCliente, setNombreCliente] = useState('');
-  const [telefonoCliente, setTelefonoCliente] = useState('');
-  const [direccionEnvio, setDireccionEnvio] = useState('');
+  const [checkoutForm, setCheckoutForm] = useState({
+    nombreCliente: '',
+    telefonoCliente: '',
+    direccionEnvio: '',
+    latitud: null as number | null,
+    longitud: null as number | null
+  });
+  const [gpsLoading, setGpsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -110,9 +115,11 @@ export default function TiendaPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           distribuidoraId: distribuidora.id,
-          nombreCliente,
-          telefonoCliente,
-          direccionEnvio,
+          nombreCliente: checkoutForm.nombreCliente,
+          telefonoCliente: checkoutForm.telefonoCliente,
+          direccionEnvio: checkoutForm.direccionEnvio,
+          latitud: checkoutForm.latitud,
+          longitud: checkoutForm.longitud,
           items: cart.map(item => ({ productoId: item.id, cantidad: item.cantidad }))
         })
       });
@@ -124,7 +131,7 @@ export default function TiendaPage() {
       const numero = distribuidora.telefono.replace(/[^0-9]/g, '');
       let mensaje = `👋 ¡Hola *${distribuidora.nombre}*!\n\n`;
       mensaje += `Acabo de realizar el pedido *#${data.id.toString().padStart(4, '0')}* desde la plataforma.\n\n`;
-      mensaje += `*Mis datos:*\n👤 Nombre: ${nombreCliente}\n📍 Dirección: ${direccionEnvio}\n📞 Teléfono: ${telefonoCliente}\n\n`;
+      mensaje += `*Mis datos:*\n👤 Nombre: ${checkoutForm.nombreCliente}\n📍 Dirección: ${checkoutForm.direccionEnvio}\n📞 Teléfono: ${checkoutForm.telefonoCliente}\n\n`;
       mensaje += `*Mi pedido:*\n`;
       
       cart.forEach(item => {
@@ -326,20 +333,57 @@ export default function TiendaPage() {
                       <div>
                         <div className="relative">
                           <Store className="w-5 h-5 absolute left-3 top-3 text-slate-400" />
-                          <input required type="text" placeholder="Nombre de tu tienda / Tu nombre" value={nombreCliente} onChange={e => setNombreCliente(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none" />
+                          <input required type="text" placeholder="Nombre de tu tienda / Tu nombre" value={checkoutForm.nombreCliente} onChange={e => setCheckoutForm({...checkoutForm, nombreCliente: e.target.value})} className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none" />
                         </div>
                       </div>
                       <div>
                         <div className="relative">
                           <Phone className="w-5 h-5 absolute left-3 top-3 text-slate-400" />
-                          <input required type="tel" placeholder="Teléfono de contacto" value={telefonoCliente} onChange={e => setTelefonoCliente(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none" />
+                          <input required type="tel" placeholder="Teléfono de contacto" value={checkoutForm.telefonoCliente} onChange={e => setCheckoutForm({...checkoutForm, telefonoCliente: e.target.value})} className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none" />
                         </div>
                       </div>
                       <div>
-                        <div className="relative">
-                          <MapPin className="w-5 h-5 absolute left-3 top-3 text-slate-400" />
-                          <input required type="text" placeholder="Dirección de entrega" value={direccionEnvio} onChange={e => setDireccionEnvio(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none" />
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Dirección de Entrega</label>
+                        <div className="flex gap-2 mb-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!navigator.geolocation) {
+                                alert('Tu navegador no soporta geolocalización');
+                                return;
+                              }
+                              setGpsLoading(true);
+                              navigator.geolocation.getCurrentPosition(
+                                (position) => {
+                                  setCheckoutForm({
+                                    ...checkoutForm,
+                                    direccionEnvio: checkoutForm.direccionEnvio ? checkoutForm.direccionEnvio : 'Ubicación GPS (Añade una referencia)',
+                                    latitud: position.coords.latitude,
+                                    longitud: position.coords.longitude
+                                  });
+                                  setGpsLoading(false);
+                                },
+                                (error) => {
+                                  alert('No se pudo obtener la ubicación. Por favor escríbela manualmente.');
+                                  setGpsLoading(false);
+                                },
+                                { enableHighAccuracy: true }
+                              );
+                            }}
+                            className="flex-1 py-2 bg-blue-50 text-blue-700 font-bold rounded-xl border border-blue-100 hover:bg-blue-100 flex items-center justify-center gap-2 transition-colors"
+                          >
+                            {gpsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                            {checkoutForm.latitud ? '📍 Ubicación Capturada' : '📍 Usar mi ubicación actual'}
+                          </button>
                         </div>
+                        <textarea 
+                          required 
+                          value={checkoutForm.direccionEnvio}
+                          onChange={e => setCheckoutForm({...checkoutForm, direccionEnvio: e.target.value})}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4a6c6f] resize-none"
+                          rows={2}
+                          placeholder="Ej: Calle 8 # 14-22, Casa verde de dos pisos"
+                        />
                       </div>
                       
                       <button 

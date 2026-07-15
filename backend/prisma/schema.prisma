@@ -37,6 +37,8 @@ model Distribuidora {
   logoUrl     String?
   portadaUrl  String?
   telefono    String     // Teléfono de WhatsApp
+  latitud     Float?
+  longitud    Float?
   
   usuarioId   Int        @unique // Dueño
   usuario     Usuario    @relation("DistribuidoraOwner", fields: [usuarioId], references: [id])
@@ -89,6 +91,8 @@ model Pedido {
   nombreCliente   String?
   telefonoCliente String?
   direccionEnvio  String?
+  latitud         Float?
+  longitud        Float?
 }
 
 model DetallePedido {

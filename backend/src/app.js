@@ -109,6 +109,19 @@ const getMyDistribuidora = async (userId) => {
   return user.distribuidoraTrabajo;
 };
 
+// Algoritmo Haversine para calcular distancia en KM entre dos coordenadas
+const calcularDistancia = (lat1, lon1, lat2, lon2) => {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity; // Si no hay GPS, mandar al final
+  const R = 6371; // Radio de la tierra en KM
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
+
 // Rutas de negocio (Administración)
 app.get('/api/productos', authMiddleware, async (req, res) => {
   const distribuidora = await getMyDistribuidora(req.user.id);
@@ -351,8 +364,11 @@ app.get('/api/conductor/entregas', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'Solo para conductores' });
   }
 
+  const distribuidora = await getMyDistribuidora(req.user.id);
+  if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
+
   try {
-    const entregas = await prisma.entrega.findMany({
+    let entregas = await prisma.entrega.findMany({
       where: { conductorId: req.user.id, estado: 'en_ruta' },
       include: { 
         pedido: {
@@ -360,11 +376,51 @@ app.get('/api/conductor/entregas', authMiddleware, async (req, res) => {
             detalles: { include: { producto: true } }
           }
         } 
-      },
-      orderBy: { id: 'asc' }
+      }
     });
+
+    // ----------------------------------------------------
+    // ALGORITMO DE RUTEO INTELIGENTE (Nearest Neighbor)
+    // ----------------------------------------------------
+    if (entregas.length > 1) {
+      let currentLat = distribuidora.latitud || 2.9273; // Por defecto latitud de Neiva si la bodega no tiene GPS
+      let currentLng = distribuidora.longitud || -75.28189;
+      
+      const rutaOptimizada = [];
+      const entregasPendientes = [...entregas];
+
+      while (entregasPendientes.length > 0) {
+        let nearestIndex = 0;
+        let minDistance = Infinity;
+
+        // Buscar la entrega más cercana al punto actual
+        for (let i = 0; i < entregasPendientes.length; i++) {
+          const e = entregasPendientes[i];
+          const dist = calcularDistancia(currentLat, currentLng, e.pedido.latitud, e.pedido.longitud);
+          
+          if (dist < minDistance) {
+            minDistance = dist;
+            nearestIndex = i;
+          }
+        }
+
+        // Remover la más cercana y añadirla a la ruta optimizada
+        const nextStop = entregasPendientes.splice(nearestIndex, 1)[0];
+        rutaOptimizada.push(nextStop);
+        
+        // Actualizar nuestro "punto actual" al GPS de esa entrega, si lo tiene
+        if (nextStop.pedido.latitud && nextStop.pedido.longitud) {
+          currentLat = nextStop.pedido.latitud;
+          currentLng = nextStop.pedido.longitud;
+        }
+      }
+      
+      entregas = rutaOptimizada;
+    }
+
     return res.json(entregas);
   } catch (error) {
+    console.error("Error obteniendo entregas:", error);
     return res.status(500).json({ error: 'Error al obtener entregas' });
   }
 });
@@ -406,7 +462,7 @@ app.get('/api/distribuidora', authMiddleware, async (req, res) => {
 });
 
 app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
-  const { nombre, slug, telefono, descripcion } = req.body;
+  const { nombre, slug, telefono, descripcion, latitud, longitud } = req.body;
   
   const distribuidora = await getMyDistribuidora(req.user.id);
   if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
@@ -430,7 +486,9 @@ app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
         nombre: nombre || distribuidora.nombre,
         slug: nuevoSlug,
         telefono: telefono || distribuidora.telefono,
-        descripcion: descripcion !== undefined ? descripcion : distribuidora.descripcion
+        descripcion: descripcion !== undefined ? descripcion : distribuidora.descripcion,
+        latitud: latitud !== undefined ? latitud : distribuidora.latitud,
+        longitud: longitud !== undefined ? longitud : distribuidora.longitud
       }
     });
     return res.json(updated);
@@ -637,7 +695,7 @@ app.get('/api/tienda/:slug', async (req, res) => {
 });
 
 app.post('/api/pedidos', async (req, res) => {
-  const { distribuidoraId, items, nombreCliente, telefonoCliente, direccionEnvio } = req.body;
+  const { distribuidoraId, items, nombreCliente, telefonoCliente, direccionEnvio, latitud, longitud } = req.body;
 
   if (!distribuidoraId || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'distribuidoraId e items son obligatorios' });
@@ -685,6 +743,8 @@ app.post('/api/pedidos', async (req, res) => {
       nombreCliente,
       telefonoCliente,
       direccionEnvio,
+      latitud,
+      longitud,
       detalles: { create: detalles },
       entrega: { create: { estado: 'en_preparacion' } }
     };
