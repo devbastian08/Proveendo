@@ -339,7 +339,7 @@ app.patch('/api/pedidos/:id/asignar', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'El pedido debe estar preparado antes de asignarlo' });
     }
 
-    // Actualizamos el pedido a en_ruta y le asignamos el conductor a la entrega
+    // Actualizamos el pedido a en_ruta
     await prisma.pedido.update({
       where: { id: pedidoId },
       data: { estado: 'en_ruta' }
@@ -349,6 +349,15 @@ app.patch('/api/pedidos/:id/asignar', authMiddleware, async (req, res) => {
       await prisma.entrega.update({
         where: { pedidoId },
         data: { estado: 'en_ruta', conductorId }
+      });
+    } else {
+      // Si el pedido no tenía registro de entrega (ej. migración de BD), lo creamos
+      await prisma.entrega.create({
+        data: {
+          pedidoId,
+          estado: 'en_ruta',
+          conductorId
+        }
       });
     }
 
