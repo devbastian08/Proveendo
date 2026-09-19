@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, UserPlus, Users, AlertCircle, Shield, Edit2, PackageSearch } from 'lucide-react';
+import { Loader2, UserPlus, Users, AlertCircle, Shield, Edit2, PackageSearch, Truck } from 'lucide-react';
 
 interface Miembro {
   id: number;
@@ -24,6 +24,9 @@ export default function EquipoPage() {
   const [rol, setRol] = useState('asesor'); // Por defecto creamos asesores
   const [puedeAlistar, setPuedeAlistar] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  
+  const [motivoReactivacion, setMotivoReactivacion] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, miembro: Miembro | null }>({ isOpen: false, miembro: null });
   
   const [error, setError] = useState('');
 
@@ -110,8 +113,16 @@ export default function EquipoPage() {
     }
   };
 
-  const toggleEnRuta = async (miembro: Miembro) => {
-    if (!confirm(`¿Seguro que deseas cambiar el estado de ruta de ${miembro.nombre}?`)) return;
+  const toggleEnRuta = (miembro: Miembro) => {
+    setConfirmModal({ isOpen: true, miembro });
+  };
+
+  const executeToggleEnRuta = async () => {
+    const miembro = confirmModal.miembro;
+    if (!miembro) return;
+    
+    setConfirmModal({ isOpen: false, miembro: null });
+    
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`http://localhost:3001/api/equipo/${miembro.id}`, {
@@ -332,6 +343,37 @@ export default function EquipoPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal para En Ruta */}
+      {confirmModal.isOpen && confirmModal.miembro && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setConfirmModal({ isOpen: false, miembro: null })}></div>
+          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 text-center">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner ${confirmModal.miembro.enRuta ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-500'}`}>
+              <Truck className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Confirmar Acción</h2>
+            <p className="text-slate-500 mb-6">
+              ¿Seguro que deseas {confirmModal.miembro.enRuta ? 'retirar de ruta a' : 'poner en ruta a'} <span className="font-bold text-slate-700">{confirmModal.miembro.nombre}</span>?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal({ isOpen: false, miembro: null })}
+                className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executeToggleEnRuta}
+                className={`flex-1 px-4 py-2 text-white font-bold rounded-xl transition-colors ${confirmModal.miembro.enRuta ? 'bg-slate-600 hover:bg-slate-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

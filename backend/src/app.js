@@ -516,7 +516,7 @@ app.get('/api/distribuidora', authMiddleware, async (req, res) => {
 });
 
 app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
-  const { nombre, slug, telefono, descripcion, latitud, longitud } = req.body;
+  const { nombre, slug, telefono, descripcion, latitud, longitud, pedidoMinimo, tiempoEntrega, envioGratis } = req.body;
   
   const distribuidora = await getMyDistribuidora(req.user.id);
   if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
@@ -542,7 +542,10 @@ app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
         telefono: telefono || distribuidora.telefono,
         descripcion: descripcion !== undefined ? descripcion : distribuidora.descripcion,
         latitud: latitud !== undefined ? latitud : distribuidora.latitud,
-        longitud: longitud !== undefined ? longitud : distribuidora.longitud
+        longitud: longitud !== undefined ? longitud : distribuidora.longitud,
+        pedidoMinimo: pedidoMinimo !== undefined ? pedidoMinimo : distribuidora.pedidoMinimo,
+        tiempoEntrega: tiempoEntrega !== undefined ? tiempoEntrega : distribuidora.tiempoEntrega,
+        envioGratis: envioGratis !== undefined ? envioGratis : distribuidora.envioGratis
       }
     });
     return res.json(updated);
@@ -697,6 +700,53 @@ app.post('/api/superadmin/distribuidoras', authMiddleware, async (req, res) => {
 });
 
 // Rutas Públicas (Página Tendero)
+
+app.get('/api/tiendas/frecuentes', async (req, res) => {
+  const { telefono } = req.query;
+  if (!telefono) return res.json([]);
+
+  try {
+    const tendero = await prisma.tendero.findFirst({
+      where: { telefono: String(telefono) }
+    });
+
+    if (!tendero) return res.json([]);
+
+    const pedidos = await prisma.pedido.findMany({
+      where: { tenderoId: tendero.id },
+      select: { distribuidoraId: true },
+      distinct: ['distribuidoraId']
+    });
+
+    const distIds = pedidos.map(p => p.distribuidoraId);
+    if (distIds.length === 0) return res.json([]);
+
+    const tiendas = await prisma.distribuidora.findMany({
+      where: { id: { in: distIds } },
+      include: {
+        _count: { select: { productos: true } }
+      }
+    });
+
+    const frecuentes = tiendas.map(t => ({
+      id: t.id,
+      nombre: t.nombre,
+      slug: t.slug,
+      descripcion: t.descripcion,
+      logoUrl: t.logoUrl,
+      portadaUrl: t.portadaUrl,
+      productosCount: t._count.productos,
+      pedidoMinimo: t.pedidoMinimo,
+      tiempoEntrega: t.tiempoEntrega,
+      envioGratis: t.envioGratis
+    }));
+
+    return res.json(frecuentes);
+  } catch (error) {
+    return res.status(500).json({ error: 'Error al obtener tiendas frecuentes' });
+  }
+});
+
 app.get('/api/tiendas/directorio', async (req, res) => {
   try {
     // Solo mostramos las que tengan productos para no mostrar tiendas vacías
@@ -715,7 +765,10 @@ app.get('/api/tiendas/directorio', async (req, res) => {
       descripcion: t.descripcion,
       logoUrl: t.logoUrl,
       portadaUrl: t.portadaUrl,
-      productosCount: t._count.productos
+      productosCount: t._count.productos,
+      pedidoMinimo: t.pedidoMinimo,
+      tiempoEntrega: t.tiempoEntrega,
+      envioGratis: t.envioGratis
     }));
 
     return res.json(directorio);
@@ -795,8 +848,23 @@ app.post('/api/pedidos', async (req, res) => {
       );
     }
 
+    let tendero = await prisma.tendero.findFirst({
+      where: { telefono: telefonoCliente }
+    });
+
+    if (!tendero) {
+      tendero = await prisma.tendero.create({
+        data: {
+          nombre_tienda: nombreCliente,
+          telefono: telefonoCliente,
+          direccion: direccionEnvio
+        }
+      });
+    }
+
     const pedidoData = {
       distribuidoraId,
+      tenderoId: tendero.id,
       estado: 'en_preparacion',
       total,
       nombreCliente,

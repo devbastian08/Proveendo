@@ -86,7 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Menú Lateral (Sidebar) */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out lg:static lg:translate-x-0
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 print:hidden
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="h-full flex flex-col">
@@ -147,7 +147,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Contenido Principal */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Barra superior solo en móviles */}
-        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4 lg:hidden">
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4 lg:hidden print:hidden">
           <button className="text-slate-500" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-6 h-6" />
           </button>

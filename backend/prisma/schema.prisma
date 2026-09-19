@@ -41,6 +41,11 @@ model Distribuidora {
   latitud     Float?
   longitud    Float?
   
+  // Nuevos campos B2B
+  pedidoMinimo  Float?
+  tiempoEntrega String?
+  envioGratis   Boolean    @default(false)
+  
   usuarioId   Int        @unique // Dueño
   usuario     Usuario    @relation("DistribuidoraOwner", fields: [usuarioId], references: [id])
   

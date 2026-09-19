@@ -11,6 +11,9 @@ interface Distribuidora {
   descripcion: string | null;
   logoUrl: string | null;
   portadaUrl: string | null;
+  pedidoMinimo: number | null;
+  tiempoEntrega: string | null;
+  envioGratis: boolean;
 }
 
 export default function AjustesPage() {
@@ -22,6 +25,9 @@ export default function AjustesPage() {
   const [slug, setSlug] = useState('');
   const [telefono, setTelefono] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [pedidoMinimo, setPedidoMinimo] = useState('');
+  const [tiempoEntrega, setTiempoEntrega] = useState('');
+  const [envioGratis, setEnvioGratis] = useState(false);
   
   // Estados para imágenes
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -48,6 +54,9 @@ export default function AjustesPage() {
         setDescripcion(data.descripcion || '');
         setLogoPreview(data.logoUrl || null);
         setPortadaPreview(data.portadaUrl || null);
+        setPedidoMinimo(data.pedidoMinimo ? data.pedidoMinimo.toString() : '');
+        setTiempoEntrega(data.tiempoEntrega || '');
+        setEnvioGratis(data.envioGratis || false);
       } else {
         setError(data.error || 'Error al cargar los ajustes');
       }
@@ -131,7 +140,10 @@ export default function AjustesPage() {
           telefono, 
           descripcion,
           logoUrl: finalLogoUrl,
-          portadaUrl: finalPortadaUrl
+          portadaUrl: finalPortadaUrl,
+          pedidoMinimo: pedidoMinimo ? Number(pedidoMinimo) : null,
+          tiempoEntrega: tiempoEntrega || null,
+          envioGratis
         })
       });
       
@@ -274,9 +286,54 @@ export default function AjustesPage() {
             </div>
           </div>
 
+          {/* SECCIÓN DE LOGÍSTICA B2B */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold text-[#4a6c6f] border-b pb-2">3. Logística y Condiciones (B2B)</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block font-medium text-slate-700">Pedido Mínimo (COP)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-2.5 text-slate-500 font-bold">$</span>
+                  <input
+                    type="number"
+                    value={pedidoMinimo}
+                    onChange={e => setPedidoMinimo(e.target.value)}
+                    placeholder="Ej. 50000"
+                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block font-medium text-slate-700">Tiempo de Entrega (Estimado)</label>
+                <input
+                  type="text"
+                  value={tiempoEntrega}
+                  onChange={e => setTiempoEntrega(e.target.value)}
+                  placeholder="Ej. 24 a 48 horas"
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <input
+                type="checkbox"
+                id="envioGratis"
+                checked={envioGratis}
+                onChange={e => setEnvioGratis(e.target.checked)}
+                className="w-5 h-5 text-[#4a6c6f] rounded focus:ring-[#4a6c6f]"
+              />
+              <label htmlFor="envioGratis" className="font-medium text-slate-700 cursor-pointer">
+                Ofrecer Envío Gratis por defecto
+              </label>
+            </div>
+          </div>
+
           {/* SECCIÓN DE CONTACTO Y ENLACE */}
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-[#4a6c6f] border-b pb-2">3. Enlace y Contacto</h2>
+            <h2 className="text-lg font-bold text-[#4a6c6f] border-b pb-2">4. Enlace y Contacto</h2>
 
             <div className="space-y-2">
               <label className="block font-medium text-slate-700">Enlace Personalizado (Slug)</label>

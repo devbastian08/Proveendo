@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Truck, CheckCircle, Package, Clock, Eye, X, User as UserIcon, Phone, MapPin, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Loader2, Truck, CheckCircle, Package, Clock, Eye, X, User as UserIcon, Phone, MapPin, RefreshCw, ArrowLeft, AlertCircle, Printer, TrendingUp, DollarSign } from 'lucide-react';
 
 interface DetallePedido {
   id: number;
@@ -50,6 +50,7 @@ export default function PedidosPage() {
   const [selectedConductorId, setSelectedConductorId] = useState<string>('');
   const [selectedReactivarId, setSelectedReactivarId] = useState<number | null>(null);
   const [motivoReactivacion, setMotivoReactivacion] = useState('');
+  const [overrideEstado, setOverrideEstado] = useState('');
 
   const fetchData = async () => {
     try {
@@ -164,8 +165,34 @@ export default function PedidosPage() {
     filtroTab === 'activos' ? p.estado !== 'entregado' : p.estado === 'entregado'
   );
 
+  // Cálculos de Mini-Métricas
+  const hoy = new Date().toDateString();
+  const ventasHoy = pedidos
+    .filter(p => new Date(p.fecha).toDateString() === hoy && p.estado !== 'cancelado')
+    .reduce((sum, p) => sum + p.total, 0);
+
+  const pendientesAlistar = pedidos.filter(p => p.estado === 'pendiente' || p.estado === 'en_preparacion').length;
+
+  const productCounts: Record<string, { cant: number, nombre: string }> = {};
+  pedidos.forEach(p => {
+    p.detalles.forEach(d => {
+      if (!productCounts[d.producto.nombre]) {
+        productCounts[d.producto.nombre] = { cant: 0, nombre: d.producto.nombre };
+      }
+      productCounts[d.producto.nombre].cant += d.cantidad;
+    });
+  });
+  
+  let productoEstrella = { nombre: 'Ninguno', cant: 0 };
+  Object.values(productCounts).forEach(item => {
+    if (item.cant > productoEstrella.cant) {
+      productoEstrella = item;
+    }
+  });
+
   return (
-    <div className="space-y-6">
+    <>
+    <div className="space-y-6 print:hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {userRole === 'asesor' && (
@@ -197,6 +224,40 @@ export default function PedidosPage() {
           >
             Historial (Entregados)
           </button>
+        </div>
+      </div>
+
+      {/* Mini-Métricas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center shrink-0">
+            <DollarSign className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Ventas Hoy</p>
+            <p className="text-xl font-black text-slate-900">${ventasHoy.toLocaleString()}</p>
+          </div>
+        </div>
+        
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+          <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center shrink-0">
+            <Clock className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Pendientes de Alistar</p>
+            <p className="text-xl font-black text-slate-900">{pendientesAlistar} <span className="text-sm font-medium text-slate-500">pedidos</span></p>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-500">Producto Estrella</p>
+            <p className="text-sm font-bold text-slate-900 line-clamp-1" title={productoEstrella.nombre}>{productoEstrella.nombre}</p>
+            <p className="text-xs text-slate-500">{productoEstrella.cant} uds vendidas</p>
+          </div>
         </div>
       </div>
       
@@ -373,10 +434,20 @@ export default function PedidosPage() {
 
               {/* Lista de Empaque */}
               <div>
-                <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
-                  <Package className="w-5 h-5 text-[#4a6c6f]" /> Lista de Empaque (Picking)
-                </h3>
-                <div className="border border-slate-100 rounded-2xl overflow-hidden">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-bold text-slate-900 mb-1">Detalle de Productos</h3>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => window.print()}
+                      className="px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-bold flex items-center gap-1 transition-colors"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Imprimir Ticket
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="border border-slate-100 rounded-xl overflow-hidden">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-slate-50 border-b border-slate-100">
                       <tr>
@@ -483,9 +554,127 @@ export default function PedidosPage() {
               )}
             </div>
 
+            {/* CONTROL MANUAL (ADMIN OVERRIDE) */}
+            {(userRole === 'administrador' || userRole === 'distribuidor') && (
+              <div className="p-6 border-t border-red-100 bg-red-50/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                  <h4 className="font-bold text-red-800">Corrección Logística de Estado</h4>
+                </div>
+                <p className="text-sm text-red-700 mb-4">
+                  Forzar un cambio de estado ignorará las validaciones. Usa esto solo para corregir errores graves de logística (Ej: conductor marcó entregado por error).
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <select
+                    value={overrideEstado}
+                    onChange={(e) => setOverrideEstado(e.target.value)}
+                    className="flex-1 px-3 py-2.5 bg-white border border-red-200 rounded-lg outline-none focus:ring-2 focus:ring-red-400 text-slate-700"
+                  >
+                    <option value="">Selecciona el estado correcto...</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="en_preparacion">En Preparación</option>
+                    <option value="preparado">Preparado</option>
+                    <option value="en_ruta">En Ruta</option>
+                    <option value="entregado">Entregado</option>
+                  </select>
+                  <button
+                    onClick={() => {
+                      if (!overrideEstado) return;
+                      changeStatus(selectedPedido.id, overrideEstado);
+                      setOverrideEstado('');
+                    }}
+                    disabled={!overrideEstado || actionLoadingId === selectedPedido.id}
+                    className="px-6 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {actionLoadingId === selectedPedido.id ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Forzar Estado'}
+                  </button>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       )}
     </div>
+
+    {/* LAYOUT DE IMPRESIÓN (SOLO VISIBLE AL IMPRIMIR) */}
+    {selectedPedido && (
+      <div className="hidden print:block font-mono text-black w-[80mm] max-w-full mx-auto bg-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+        
+        {/* HEADER */}
+        <div className="text-center mb-4 border-b-2 border-black pb-4">
+          <h1 className="text-2xl font-black uppercase tracking-widest mb-1">PROVEENDO</h1>
+          <p className="text-xs font-bold mb-3 uppercase">Documento Logístico</p>
+          
+          <div className="border border-black py-2 mx-4 bg-gray-100">
+            <p className="text-xs uppercase tracking-widest">Pedido No.</p>
+            <p className="text-4xl font-black">{selectedPedido.id.toString().padStart(4, '0')}</p>
+          </div>
+          <p className="mt-3 text-sm">{new Date(selectedPedido.fecha).toLocaleString('es-CO')}</p>
+        </div>
+        
+        {/* CLIENTE */}
+        <div className="border-b-2 border-black pb-4 mb-4">
+          <p className="font-black text-lg leading-tight uppercase">{selectedPedido.nombreCliente || `Tendero ${selectedPedido.tenderoId}`}</p>
+          <p className="text-sm mt-1">📞 {selectedPedido.telefonoCliente || 'No registrado'}</p>
+          {selectedPedido.direccionEnvio && (
+            <div className="mt-2 p-2 border border-black">
+              <p className="text-xs font-bold uppercase mb-1">Dirección de Entrega:</p>
+              <p className="text-base font-bold leading-tight">{selectedPedido.direccionEnvio}</p>
+            </div>
+          )}
+        </div>
+
+        {/* LISTA DE EMPAQUE */}
+        <p className="font-bold text-center uppercase border-b border-black mb-2 pb-1">Lista de Empaque</p>
+        <table className="w-full text-left mb-6 text-sm">
+          <thead>
+            <tr className="border-b border-black">
+              <th className="py-1 w-10">Cant</th>
+              <th className="py-1">Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {selectedPedido.detalles.map(d => (
+              <tr key={d.id} className="border-b border-gray-300">
+                <td className="py-2 align-top font-black text-lg">{d.cantidad}</td>
+                <td className="py-2 pl-2 uppercase leading-tight font-bold">{d.producto.nombre}
+                  <div className="text-xs font-normal mt-1">${d.subtotal.toLocaleString()}</div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* TOTALES */}
+        <div className="border-t-2 border-b-2 border-black py-2 mb-8 flex justify-between items-center">
+          <span className="font-bold uppercase text-lg">Total Pagar:</span>
+          <span className="font-black text-2xl">${selectedPedido.total.toLocaleString()}</span>
+        </div>
+        
+        {/* CONTROL INTERNO */}
+        <div className="text-sm space-y-5 mb-8">
+          <div className="flex justify-between items-end">
+            <span>Alistó:</span>
+            <span className="border-b border-black w-48"></span>
+          </div>
+          <div className="flex justify-between items-end">
+            <span>Repartidor:</span>
+            <span className="border-b border-black w-48"></span>
+          </div>
+          <div className="flex justify-between items-end">
+            <span>Recibió:</span>
+            <span className="border-b border-black w-48"></span>
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <div className="text-center text-xs font-bold uppercase pb-8">
+          <p>*** Fin del Documento ***</p>
+        </div>
+      </div>
+    )}
+
+    </>
   );
 }

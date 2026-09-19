@@ -14,6 +14,12 @@ export interface CartItem extends Producto {
   cantidad: number;
 }
 
+export interface CheckoutForm {
+  nombreCliente: string;
+  telefonoCliente: string;
+  direccionEnvio: string;
+}
+
 interface CartState {
   cart: CartItem[];
   isCartOpen: boolean;
@@ -24,6 +30,8 @@ interface CartState {
   setIsCartOpen: (isOpen: boolean) => void;
   totalCart: () => number;
   itemsCount: () => number;
+  checkoutForm: CheckoutForm;
+  setCheckoutForm: (form: CheckoutForm) => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -31,6 +39,12 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       cart: [],
       isCartOpen: false,
+      checkoutForm: {
+        nombreCliente: '',
+        telefonoCliente: '',
+        direccionEnvio: ''
+      },
+      setCheckoutForm: (form) => set({ checkoutForm: form }),
 
       addToCart: (prod) => set((state) => {
         const existing = state.cart.find(item => item.id === prod.id);

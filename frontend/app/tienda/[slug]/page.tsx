@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, ShoppingCart, Plus, Minus, Store, Phone, MapPin, CheckCircle, Trash2, ArrowLeft } from 'lucide-react';
+import { Loader2, ShoppingCart, Plus, Minus, Store, Phone, MapPin, CheckCircle, Trash2, ArrowLeft, AlertCircle, LayoutGrid, List, Search, X, PackageX } from 'lucide-react';
 import Image from 'next/image';
+import { useCartStore } from '@/store/cartStore';
 
 interface Producto {
   id: number;
@@ -20,6 +21,7 @@ interface Distribuidora {
   nombre: string;
   slug: string;
   telefono: string;
+  pedidoMinimo?: number;
 }
 
 interface CartItem extends Producto {
@@ -35,20 +37,21 @@ export default function TiendaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { cart, isCartOpen, addToCart, removeFromCart, updateQuantity, clearCart, setIsCartOpen, totalCart, itemsCount, checkoutForm, setCheckoutForm } = useCartStore();
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccessId, setOrderSuccessId] = useState<string | null>(null);
 
-  // Formulario de checkout
-  const [checkoutForm, setCheckoutForm] = useState({
-    nombreCliente: '',
-    telefonoCliente: '',
-    direccionEnvio: '',
+  // GPS local state (No guardado en localStorage para obligar a capturarlo siempre)
+  const [gpsLocation, setGpsLocation] = useState({
     latitud: null as number | null,
     longitud: null as number | null
   });
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [alertModal, setAlertModal] = useState<{title: string, message: string, isError: boolean} | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Todas');
 
   useEffect(() => {
     const fetchStore = async () => {
@@ -72,44 +75,25 @@ export default function TiendaPage() {
     fetchStore();
   }, [slug]);
 
-  const addToCart = (prod: Producto) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === prod.id);
-      if (existing) {
-        if (existing.cantidad >= prod.stock) return prev; // No exceder stock
-        return prev.map(item => item.id === prod.id ? { ...item, cantidad: item.cantidad + 1 } : item);
-      }
-      return [...prev, { ...prod, cantidad: 1 }];
-    });
-  };
-
-  const removeFromCart = (id: number) => {
-    setCart(prev => prev.filter(item => item.id !== id));
-  };
-
-  const updateQuantity = (id: number, delta: number) => {
-    setCart(prev => {
-      return prev.map(item => {
-        if (item.id === id) {
-          const newQ = item.cantidad + delta;
-          if (newQ > 0 && newQ <= item.stock) {
-            return { ...item, cantidad: newQ };
-          }
-        }
-        return item;
-      });
-    });
-  };
-
-  const totalCart = cart.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
-  const itemsCount = cart.reduce((acc, item) => acc + item.cantidad, 0);
-
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0 || !distribuidora) return;
 
-    if (!checkoutForm.latitud || !checkoutForm.longitud) {
-      alert("Para garantizar que tu pedido llegue rápido y sin contratiempos a tu negocio, por favor toca el botón '📍 Compartir ubicación exacta' antes de enviar el pedido. Esto ayuda al conductor a encontrarte fácilmente.");
+    if (totalCart() < PEDIDO_MINIMO) {
+      setAlertModal({
+        title: 'Pedido mínimo no alcanzado',
+        message: `El pedido mínimo es de $${PEDIDO_MINIMO.toLocaleString()}. Te faltan $${(PEDIDO_MINIMO - totalCart()).toLocaleString()} para poder realizar el pedido.`,
+        isError: true
+      });
+      return;
+    }
+
+    if (!gpsLocation.latitud || !gpsLocation.longitud) {
+      setAlertModal({
+        title: 'Ubicación Requerida',
+        message: "Para garantizar que tu pedido llegue rápido y sin contratiempos a tu negocio, por favor toca el botón '📍 Compartir ubicación exacta' antes de enviar el pedido. Esto ayuda al conductor a encontrarte fácilmente.",
+        isError: false
+      });
       return;
     }
 
@@ -125,8 +109,8 @@ export default function TiendaPage() {
           nombreCliente: checkoutForm.nombreCliente,
           telefonoCliente: checkoutForm.telefonoCliente,
           direccionEnvio: checkoutForm.direccionEnvio,
-          latitud: checkoutForm.latitud,
-          longitud: checkoutForm.longitud,
+          latitud: gpsLocation.latitud,
+          longitud: gpsLocation.longitud,
           items: cart.map(item => ({ productoId: item.id, cantidad: item.cantidad }))
         })
       });
@@ -135,12 +119,12 @@ export default function TiendaPage() {
       if (!res.ok) throw new Error(data.error || 'Error al procesar el pedido');
 
       // Limpiar carrito e informar éxito
-      setCart([]);
+      clearCart();
       setIsCartOpen(false);
       setOrderSuccessId(data.id.toString().padStart(4, '0'));
       
     } catch (err: any) {
-      alert(err.message);
+      setAlertModal({ title: 'Error al procesar', message: err.message, isError: true });
     } finally {
       setIsSubmitting(false);
     }
@@ -193,27 +177,161 @@ export default function TiendaPage() {
             className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
           >
             <ShoppingCart className="w-6 h-6" />
-            {itemsCount > 0 && (
+            {itemsCount() > 0 && (
               <span className="absolute top-0 right-0 w-5 h-5 bg-[#d62246] text-white text-xs font-bold rounded-full flex items-center justify-center transform translate-x-1 -translate-y-1 shadow-sm">
-                {itemsCount}
+                {itemsCount()}
               </span>
             )}
           </button>
         </div>
       </header>
 
-      {/* Catálogo de Productos */}
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        <h2 className="text-xl font-bold text-slate-900 mb-6">Catálogo de Productos</h2>
+      {/* Helper para buscador sin tildes */}
+      {(() => {
+        const normalizeStr = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        
+        const filteredProductos = productos.filter(p => 
+          (selectedCategory === 'Todas' || (p.categoria || 'General') === selectedCategory) && 
+          normalizeStr(p.nombre).includes(normalizeStr(searchTerm))
+        );
+
+        return (
+          <main className="max-w-5xl mx-auto px-4 py-8">
+        
+        {/* Buscador y Filtros Rápidos */}
+        <div className="sticky top-[80px] z-30 bg-slate-50 pt-4 pb-2 -mx-4 px-4 border-b border-slate-200 mb-6 shadow-[0_10px_10px_-10px_rgba(0,0,0,0.05)]">
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="w-5 h-5 absolute left-4 top-3.5 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Buscar productos rápidamente... (Ej: Aceite)" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-12 py-3.5 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#4a6c6f] focus:border-transparent outline-none shadow-sm text-slate-700 sm:text-lg transition-shadow"
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full p-1.5 transition-colors"
+                  title="Borrar búsqueda"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex overflow-x-auto pb-2 gap-2 snap-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {['Todas', ...Array.from(new Set(productos.map(p => p.categoria || 'General')))].map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`shrink-0 px-5 py-2.5 rounded-full font-bold text-sm transition-all snap-start ${
+                  selectedCategory === cat 
+                    ? 'bg-[#4a6c6f] text-white shadow-md transform scale-105' 
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-slate-900">Catálogo de Productos</h2>
+          <div className="flex items-center bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-[#4a6c6f] text-white shadow' : 'text-slate-400 hover:text-slate-600'}`}
+              title="Vista de Tarjetas"
+            >
+              <LayoutGrid className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-[#4a6c6f] text-white shadow' : 'text-slate-400 hover:text-slate-600'}`}
+              title="Vista de Lista Rápida"
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
         
         {productos.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-slate-100">
             <p className="text-slate-500">No hay productos disponibles por el momento.</p>
           </div>
+        ) : filteredProductos.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center">
+            <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mb-4">
+              <PackageX className="w-10 h-10" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">No encontramos productos</h3>
+            <p className="text-slate-500 font-medium mb-6">No hay resultados para "{searchTerm}" en la categoría "{selectedCategory}".</p>
+            <button onClick={() => { setSearchTerm(''); setSelectedCategory('Todas'); }} className="px-6 py-2.5 bg-[#4a6c6f] hover:bg-[#3a5658] text-white rounded-xl font-bold transition-colors">
+              Limpiar búsqueda
+            </button>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {productos.map(prod => {
+          <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" : "flex flex-col gap-3"}>
+            {filteredProductos.map(prod => {
               const inCart = cart.find(c => c.id === prod.id);
+              
+              if (viewMode === 'list') {
+                return (
+                  <div key={prod.id} className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex items-center p-3 gap-4 hover:shadow-md transition-shadow">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-50 relative overflow-hidden rounded-lg shrink-0 border border-slate-100">
+                      {prod.imagenUrl ? (
+                        <img src={prod.imagenUrl} alt={prod.nombre} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                          <Store className="w-8 h-8" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-[#4a6c6f] mb-0.5 truncate">{prod.categoria || 'General'}</p>
+                      <h3 className="font-bold text-slate-900 text-sm sm:text-base leading-tight truncate">{prod.nombre}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="font-black text-slate-900">${prod.precio.toLocaleString()}</span>
+                        {prod.stock > 0 && prod.stock <= 10 ? (
+                          <span className="text-[10px] sm:text-xs font-bold text-red-500 animate-pulse bg-red-50 px-1.5 py-0.5 rounded-md">🔥 Quedan {prod.stock}</span>
+                        ) : (
+                          <span className="text-[10px] sm:text-xs text-slate-500 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-md">{prod.stock === 0 ? 'Agotado' : `${prod.stock} disp.`}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 w-[100px] sm:w-[120px]">
+                      {inCart ? (
+                        <div className="flex items-center justify-between bg-slate-50 p-1 rounded-lg border border-slate-200">
+                          <button onClick={() => updateQuantity(prod.id, -1)} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white rounded-md shadow-sm text-slate-600 hover:text-slate-900">
+                            <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                          <span className="font-bold text-sm text-slate-900">{inCart.cantidad}</span>
+                          <button onClick={() => updateQuantity(prod.id, 1)} disabled={inCart.cantidad >= prod.stock} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white rounded-md shadow-sm text-slate-600 hover:text-slate-900 disabled:opacity-50">
+                            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => addToCart(prod)}
+                          disabled={prod.stock === 0}
+                          className="w-full py-2 bg-[#4a6c6f] hover:bg-[#3a5658] disabled:opacity-50 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5 text-sm"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> 
+                          {prod.stock === 0 ? 'Agotado' : 'Agregar'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Vista de Grid Original
               return (
                 <div key={prod.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                   <div className="aspect-square bg-slate-50 relative overflow-hidden">
@@ -226,12 +344,18 @@ export default function TiendaPage() {
                     )}
                   </div>
                   <div className="p-4 flex flex-col flex-1">
-                    <p className="text-xs font-medium text-[#4a6c6f] mb-1">{prod.categoria || 'General'}</p>
+                    <p className="text-xs font-medium text-[#4a6c6f] mb-1 truncate">{prod.categoria || 'General'}</p>
                     <h3 className="font-bold text-slate-900 text-lg leading-tight mb-2 line-clamp-2">{prod.nombre}</h3>
                     <div className="mt-auto">
                       <div className="flex items-end justify-between mb-4">
                         <span className="font-black text-slate-900 text-xl">${prod.precio.toLocaleString()}</span>
-                        <span className="text-xs text-slate-500 font-medium">{prod.stock} disp.</span>
+                        {prod.stock > 0 && prod.stock <= 10 ? (
+                          <span className="text-xs font-bold text-red-500 animate-pulse flex items-center gap-1">
+                            <span className="text-sm">🔥</span> ¡Solo quedan {prod.stock}!
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-500 font-medium">{prod.stock === 0 ? 'Agotado' : `${prod.stock} disp.`}</span>
+                        )}
                       </div>
                       
                       {inCart ? (
@@ -260,8 +384,28 @@ export default function TiendaPage() {
               );
             })}
           </div>
-        )}
+      )}
       </main>
+      );
+      })()}
+
+      {/* Botón Flotante (Sticky Cart) */}
+      {itemsCount() > 0 && !isCartOpen && (
+        <div className="fixed bottom-6 left-0 right-0 z-40 flex justify-center px-4 animate-in slide-in-from-bottom-10 fade-in duration-300">
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="w-full max-w-md bg-[#25D366] hover:bg-[#128C7E] text-white py-4 px-6 rounded-2xl shadow-2xl flex items-center justify-between animate-[pulse_2s_ease-in-out_infinite] transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-white/30 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                {itemsCount()}
+              </div>
+              <span className="font-bold text-lg">Pedir Ahora</span>
+            </div>
+            <span className="font-black text-xl shadow-sm">${totalCart().toLocaleString()}</span>
+          </button>
+        </div>
+      )}
 
       {/* Modal del Carrito (Side panel) */}
       {isCartOpen && (
@@ -314,9 +458,29 @@ export default function TiendaPage() {
                   ))}
                   
                   <div className="pt-4 border-t border-slate-200">
+                    {/* Barra de Progreso de Pedido Mínimo */}
+                    <div className="mb-6">
+                      {totalCart() < (distribuidora?.pedidoMinimo || 50000) ? (
+                        <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-orange-700 font-bold text-sm">Faltan ${((distribuidora?.pedidoMinimo || 50000) - totalCart()).toLocaleString()} para el mínimo</span>
+                            <span className="text-orange-700 font-black text-sm">{Math.round((totalCart() / (distribuidora?.pedidoMinimo || 50000)) * 100)}%</span>
+                          </div>
+                          <div className="w-full bg-orange-200 rounded-full h-2">
+                            <div className="bg-orange-500 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min((totalCart() / (distribuidora?.pedidoMinimo || 50000)) * 100, 100)}%` }}></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-2 text-emerald-700">
+                          <CheckCircle className="w-5 h-5 text-emerald-500" />
+                          <span className="font-bold text-sm">¡Has superado el pedido mínimo!</span>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex justify-between items-center mb-6">
                       <span className="text-slate-500 font-medium">Total Estimado</span>
-                      <span className="text-2xl font-black text-slate-900">${totalCart.toLocaleString()}</span>
+                      <span className="text-2xl font-black text-slate-900">${totalCart().toLocaleString()}</span>
                     </div>
 
                     <form onSubmit={handleCheckout} className="space-y-4">
@@ -340,35 +504,33 @@ export default function TiendaPage() {
                             type="button"
                             onClick={() => {
                               if (!navigator.geolocation) {
-                                alert('Tu navegador no soporta geolocalización.');
+                                setAlertModal({ title: 'Navegador no compatible', message: 'Tu navegador no soporta geolocalización. Intenta desde tu celular.', isError: true });
                                 return;
                               }
                               setGpsLoading(true);
                               navigator.geolocation.getCurrentPosition(
                                 (position) => {
-                                  setCheckoutForm({
-                                    ...checkoutForm,
-                                    direccionEnvio: checkoutForm.direccionEnvio ? checkoutForm.direccionEnvio : 'Ubicación GPS (Añade una referencia)',
+                                  setGpsLocation({
                                     latitud: position.coords.latitude,
                                     longitud: position.coords.longitude
                                   });
                                   setGpsLoading(false);
                                 },
                                 (error) => {
-                                  alert('No se pudo obtener la ubicación (Asegúrate de dar permisos o intenta en celular).');
+                                  setAlertModal({ title: 'No pudimos obtener tu ubicación', message: 'Asegúrate de dar permisos de ubicación al navegador o intenta desde tu celular.', isError: true });
                                   setGpsLoading(false);
                                 },
                                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                               );
                             }}
                             className={`flex-1 py-3 font-bold rounded-xl border flex items-center justify-center gap-2 transition-colors ${
-                              checkoutForm.latitud 
+                              gpsLocation.latitud 
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                 : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 shadow-sm animate-pulse'
                             }`}
                           >
                             {gpsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-                            {checkoutForm.latitud ? '📍 Ubicación exacta confirmada' : '📍 Compartir ubicación exacta (Requerido para entrega rápida)'}
+                            {gpsLocation.latitud ? '📍 Ubicación exacta confirmada' : '📍 Compartir ubicación exacta (Requerido para entrega rápida)'}
                           </button>
                         </div>
                         <textarea 
@@ -383,8 +545,8 @@ export default function TiendaPage() {
                       
                       <button 
                         type="submit" 
-                        disabled={isSubmitting}
-                        className="w-full py-4 mt-4 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-green-500/30"
+                        disabled={isSubmitting || totalCart() < (distribuidora?.pedidoMinimo || 50000)}
+                        className="w-full py-4 mt-4 bg-[#25D366] hover:bg-[#128C7E] disabled:opacity-50 disabled:bg-slate-300 text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-green-500/30"
                       >
                         {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : (
                           <>
@@ -418,6 +580,29 @@ export default function TiendaPage() {
               className="w-full py-4 bg-[#4a6c6f] hover:bg-[#3a5658] text-white rounded-xl font-bold text-lg transition-colors shadow-lg shadow-[#4a6c6f]/30"
             >
               Seguir Comprando
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Alerta Custom */}
+      {alertModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex items-start gap-4 mb-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${alertModal.isError ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-blue-500'}`}>
+                {alertModal.isError ? <AlertCircle className="w-6 h-6" /> : <MapPin className="w-6 h-6" />}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 leading-tight mb-1">{alertModal.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{alertModal.message}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setAlertModal(null)}
+              className={`w-full py-3 rounded-xl font-bold text-sm transition-colors ${alertModal.isError ? 'bg-red-50 hover:bg-red-100 text-red-600' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'}`}
+            >
+              Entendido
             </button>
           </div>
         </div>
