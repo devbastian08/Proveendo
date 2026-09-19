@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const rateLimit = require('express-rate-limit');
+const { sendWhatsAppMessage } = require('./services/whatsappService');
 
 const prisma = new PrismaClient();
 const app = express();
@@ -308,6 +309,11 @@ app.patch('/api/pedidos/:id/estado', authMiddleware, async (req, res) => {
       });
     }
 
+    if (existing.telefonoCliente) {
+      const msg = `¡Hola ${existing.nombreCliente || 'Cliente'}! El estado de tu pedido ha cambiado a: ${estado.replace('_', ' ')}.`;
+      sendWhatsAppMessage(existing.telefonoCliente, msg);
+    }
+
     return res.json(pedido);
   } catch (error) {
     return res.status(500).json({ error: 'Error interno' });
@@ -456,6 +462,12 @@ app.patch('/api/conductor/entregas/:pedidoId/entregado', authMiddleware, async (
       where: { id: pedidoId },
       data: { estado: 'entregado' }
     });
+
+    const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId } });
+    if (pedido && pedido.telefonoCliente) {
+      const msg = `¡Hola ${pedido.nombreCliente || 'Cliente'}! Tu pedido ha sido entregado. ¡Gracias por preferirnos!`;
+      sendWhatsAppMessage(pedido.telefonoCliente, msg);
+    }
 
     return res.json({ success: true, message: 'Pedido marcado como entregado' });
   } catch (error) {
@@ -715,6 +727,10 @@ app.post('/api/pedidos', async (req, res) => {
   }
 
   try {
+    const distribuidora = await prisma.distribuidora.findUnique({
+      where: { id: distribuidoraId }
+    });
+    
     let total = 0;
     const detalles = [];
     const transacciones = [];
@@ -767,6 +783,18 @@ app.post('/api/pedidos', async (req, res) => {
 
     const resultados = await prisma.$transaction(transacciones);
     const pedido = resultados[resultados.length - 1]; // El pedido es el último objeto de la transacción
+
+    // Notificar al cliente
+    if (telefonoCliente) {
+      const msgCliente = `¡Hola ${nombreCliente}! Hemos recibido tu pedido #${pedido.id.toString().padStart(4, '0')} por un total de $${total.toLocaleString()}. Te notificaremos cuando haya cambios.`;
+      sendWhatsAppMessage(telefonoCliente, msgCliente);
+    }
+
+    // Notificar a la distribuidora (administrador)
+    if (distribuidora && distribuidora.telefono) {
+      const msgAdmin = `NUEVO PEDIDO #${pedido.id.toString().padStart(4, '0')} 🛒\n\nCliente: ${nombreCliente}\nTeléfono: ${telefonoCliente}\nDirección: ${direccionEnvio}\nTotal: $${total.toLocaleString()}\n\nRevisa el panel de administrador para ver el detalle de los productos.`;
+      sendWhatsAppMessage(distribuidora.telefono, msgAdmin);
+    }
 
     return res.status(201).json(pedido);
   } catch (error) {

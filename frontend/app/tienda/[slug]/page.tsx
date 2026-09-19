@@ -37,6 +37,8 @@ export default function TiendaPage() {
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderSuccessId, setOrderSuccessId] = useState<string | null>(null);
 
   // Formulario de checkout
   const [checkoutForm, setCheckoutForm] = useState({
@@ -47,7 +49,6 @@ export default function TiendaPage() {
     longitud: null as number | null
   });
   const [gpsLoading, setGpsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchStore = async () => {
@@ -127,26 +128,10 @@ export default function TiendaPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al procesar el pedido');
 
-      // 2. Generar el mensaje de WhatsApp
-      const numero = distribuidora.telefono.replace(/[^0-9]/g, '');
-      let mensaje = `👋 ¡Hola *${distribuidora.nombre}*!\n\n`;
-      mensaje += `Acabo de realizar el pedido *#${data.id.toString().padStart(4, '0')}* desde la plataforma.\n\n`;
-      mensaje += `*Mis datos:*\n👤 Nombre: ${checkoutForm.nombreCliente}\n📍 Dirección: ${checkoutForm.direccionEnvio}\n📞 Teléfono: ${checkoutForm.telefonoCliente}\n\n`;
-      mensaje += `*Mi pedido:*\n`;
-      
-      cart.forEach(item => {
-        mensaje += `- ${item.cantidad}x ${item.nombre} ($${(item.precio * item.cantidad).toLocaleString()})\n`;
-      });
-      
-      mensaje += `\n*Total:* $${totalCart.toLocaleString()}\n\n`;
-      mensaje += `¿Me confirmas si todo está bien para el envío?`;
-
-      const whatsappUrl = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
-      
-      // Limpiar carrito y redirigir
+      // Limpiar carrito e informar éxito
       setCart([]);
       setIsCartOpen(false);
-      window.open(whatsappUrl, '_blank');
+      setOrderSuccessId(data.id.toString().padStart(4, '0'));
       
     } catch (err: any) {
       alert(err.message);
@@ -349,7 +334,7 @@ export default function TiendaPage() {
                             type="button"
                             onClick={() => {
                               if (!navigator.geolocation) {
-                                alert('Tu navegador no soporta geolocalización');
+                                alert('Tu navegador no soporta geolocalización.');
                                 return;
                               }
                               setGpsLoading(true);
@@ -364,10 +349,10 @@ export default function TiendaPage() {
                                   setGpsLoading(false);
                                 },
                                 (error) => {
-                                  alert('No se pudo obtener la ubicación. Por favor escríbela manualmente.');
+                                  alert('No se pudo obtener la ubicación (Asegúrate de dar permisos o intenta en celular).');
                                   setGpsLoading(false);
                                 },
-                                { enableHighAccuracy: true }
+                                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                               );
                             }}
                             className="flex-1 py-2 bg-blue-50 text-blue-700 font-bold rounded-xl border border-blue-100 hover:bg-blue-100 flex items-center justify-center gap-2 transition-colors"
@@ -403,6 +388,27 @@ export default function TiendaPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Éxito */}
+      {orderSuccessId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-6 shadow-inner">
+              <CheckCircle className="w-10 h-10" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">¡Pedido Exitoso!</h2>
+            <p className="text-slate-500 mb-6 leading-relaxed">
+              Tu orden <span className="font-bold text-slate-700">#{orderSuccessId}</span> ha sido enviada a la distribuidora. Te notificaremos por WhatsApp cualquier novedad.
+            </p>
+            <button
+              onClick={() => setOrderSuccessId(null)}
+              className="w-full py-4 bg-[#4a6c6f] hover:bg-[#3a5658] text-white rounded-xl font-bold text-lg transition-colors shadow-lg shadow-[#4a6c6f]/30"
+            >
+              Seguir Comprando
+            </button>
           </div>
         </div>
       )}
