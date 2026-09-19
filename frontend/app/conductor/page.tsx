@@ -24,6 +24,7 @@ export default function ConductorPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'pendientes' | 'entregadas'>('pendientes');
+  const [enRuta, setEnRuta] = useState(false);
   
   const router = useRouter();
 
@@ -51,9 +52,61 @@ export default function ConductorPage() {
     }
   };
 
+  const fetchEstado = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:3001/api/conductor/estado', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEnRuta(data.enRuta);
+      }
+    } catch (err) {
+      console.error('Error fetching estado:', err);
+    }
+  };
+
   useEffect(() => {
     fetchEntregas();
+    fetchEstado();
   }, []);
+
+  const iniciarRuta = async () => {
+    if (!confirm('¿Seguro que deseas iniciar tu ruta? La bodega no podrá asignarte más pedidos hasta que finalices.')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:3001/api/conductor/iniciar-ruta', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setEnRuta(true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const finalizarRuta = async () => {
+    if (entregas.length > 0) {
+      alert('Aún tienes entregas pendientes.');
+      return;
+    }
+    if (!confirm('¿Seguro que deseas finalizar tu ruta?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:3001/api/conductor/finalizar-ruta', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setEnRuta(false);
+      else {
+        const data = await res.json();
+        alert(data.error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const marcarEntregado = async (pedidoId: number) => {
     setActionLoadingId(pedidoId);
@@ -89,15 +142,60 @@ export default function ConductorPage() {
   return (
     <div className="space-y-4">
       {/* Saludo */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center gap-4">
-        <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
-          <PackageOpen className="w-6 h-6" />
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
+            <PackageOpen className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-slate-900">Ruta de Hoy</h2>
+            <p className="text-slate-500 font-medium">{entregas.length} entregas pendientes</p>
+          </div>
         </div>
         <div>
-          <h2 className="text-xl font-black text-slate-900">Ruta de Hoy</h2>
-          <p className="text-slate-500 font-medium">{entregas.length} entregas pendientes</p>
+          {enRuta ? (
+            <span className="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-bold uppercase flex items-center gap-1 border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              En Ruta
+            </span>
+          ) : (
+            <span className="bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full text-xs font-bold uppercase">
+              En Bodega
+            </span>
+          )}
         </div>
       </div>
+
+      {!enRuta && entregas.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center space-y-4">
+          <h3 className="text-blue-900 font-bold text-lg">¿Listo para salir?</h3>
+          <p className="text-blue-700 text-sm">
+            Para poder entregar pedidos y obtener las rutas de navegación, debes iniciar tu ruta. 
+            <strong> Recuerda que una vez iniciada, la bodega no te podrá asignar más pedidos.</strong>
+          </p>
+          <button 
+            onClick={iniciarRuta}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors shadow-sm"
+          >
+            Iniciar Ruta
+          </button>
+        </div>
+      )}
+
+      {enRuta && entregas.length === 0 && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center space-y-4">
+          <h3 className="text-emerald-900 font-bold text-lg">¡Ruta Completada!</h3>
+          <p className="text-emerald-700 text-sm">
+            Has completado todas tus entregas asignadas.
+          </p>
+          <button 
+            onClick={finalizarRuta}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-colors shadow-sm"
+          >
+            Finalizar Ruta
+          </button>
+        </div>
+      )}
 
       {entregas.length === 0 ? (
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 text-center flex flex-col items-center">
@@ -150,52 +248,58 @@ export default function ConductorPage() {
                   <PhoneCall className="w-5 h-5" /> Llamar Cliente
                 </a>
                 
-                <div className="bg-slate-50 p-4 border-t border-slate-100 flex gap-3 rounded-2xl">
-                  <button 
-                    onClick={() => {
-                      // Construir enlace de ruta
-                      const destLat = entrega.pedido.latitud;
-                      const destLng = entrega.pedido.longitud;
-                      
-                      let mapsUrl = '';
-                      if (destLat && destLng) {
-                        // Si hay GPS, construimos la ruta
-                        mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}`;
+                {enRuta ? (
+                  <div className="bg-slate-50 p-4 border-t border-slate-100 flex gap-3 rounded-2xl">
+                    <button 
+                      onClick={() => {
+                        // Construir enlace de ruta
+                        const destLat = entrega.pedido.latitud;
+                        const destLng = entrega.pedido.longitud;
                         
-                        // Si no es la primera entrega, usamos la entrega anterior como origen para dibujar la ruta continua
-                        if (index > 0) {
-                          const prevLat = entregas[index - 1].pedido.latitud;
-                          const prevLng = entregas[index - 1].pedido.longitud;
-                          if (prevLat && prevLng) {
-                            mapsUrl += `&origin=${prevLat},${prevLng}`;
+                        let mapsUrl = '';
+                        if (destLat && destLng) {
+                          // Si hay GPS, construimos la ruta
+                          mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}`;
+                          
+                          // Si no es la primera entrega, usamos la entrega anterior como origen para dibujar la ruta continua
+                          if (index > 0) {
+                            const prevLat = entregas[index - 1].pedido.latitud;
+                            const prevLng = entregas[index - 1].pedido.longitud;
+                            if (prevLat && prevLng) {
+                              mapsUrl += `&origin=${prevLat},${prevLng}`;
+                            }
                           }
+                        } else {
+                          // Búsqueda por texto fallback
+                          mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.pedido.direccionEnvio || '')}`;
                         }
-                      } else {
-                        // Búsqueda por texto fallback
-                        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.pedido.direccionEnvio || '')}`;
-                      }
-                      
-                      window.open(mapsUrl, '_blank');
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 py-3 rounded-xl font-bold transition-colors"
-                  >
-                    <Navigation className="w-5 h-5" />
-                    📍 Navegar Mapa
-                  </button>
-                  
-                  <button 
-                    onClick={() => marcarEntregado(entrega.pedidoId)}
-                    disabled={actionLoadingId === entrega.pedidoId}
-                    className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition-colors disabled:opacity-50"
-                  >
-                    {actionLoadingId === entrega.pedidoId ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-5 h-5" />
-                    )}
-                    Entregado
-                  </button>
-                </div>
+                        
+                        window.open(mapsUrl, '_blank');
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 py-3 rounded-xl font-bold transition-colors"
+                    >
+                      <Navigation className="w-5 h-5" />
+                      📍 Navegar Mapa
+                    </button>
+                    
+                    <button 
+                      onClick={() => marcarEntregado(entrega.pedidoId)}
+                      disabled={actionLoadingId === entrega.pedidoId}
+                      className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition-colors disabled:opacity-50"
+                    >
+                      {actionLoadingId === entrega.pedidoId ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-5 h-5" />
+                      )}
+                      Entregado
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-amber-50 p-3 rounded-xl text-amber-700 text-center text-sm font-medium border border-amber-200">
+                    Inicia la ruta para poder entregar y navegar a este pedido.
+                  </div>
+                )}
               </div>
             </div>
           ))}

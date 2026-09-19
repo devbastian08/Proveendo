@@ -17,6 +17,7 @@ model Usuario {
   contrasena             String
   rol                    String         // Ej: "distribuidor", "admin", "asesor"
   puedeAlistar           Boolean        @default(false)
+  enRuta                 Boolean        @default(false)
   
   // Relación si el usuario es DUEÑO
   distribuidora          Distribuidora? @relation("DistribuidoraOwner")

@@ -2,23 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { Loader2, ShoppingCart, Plus, Minus, Store, Phone, MapPin, CheckCircle, Trash2 } from 'lucide-react';
-
-interface Producto {
-  id: number;
-  nombre: string;
-  precio: number;
-  stock: number;
-  categoria: string;
-  imagenUrl: string | null;
-}
+import { useCartStore, Producto } from '@/store/cartStore';
 
 interface Distribuidora {
   id: number;
   nombre: string;
-}
-
-interface CartItem extends Producto {
-  cantidad: number;
 }
 
 export default function AsesorPage() {
@@ -27,8 +15,16 @@ export default function AsesorPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const cart = useCartStore(state => state.cart);
+  const isCartOpen = useCartStore(state => state.isCartOpen);
+  const setIsCartOpen = useCartStore(state => state.setIsCartOpen);
+  const addToCart = useCartStore(state => state.addToCart);
+  const removeFromCart = useCartStore(state => state.removeFromCart);
+  const updateQuantity = useCartStore(state => state.updateQuantity);
+  const clearCart = useCartStore(state => state.clearCart);
+  const totalCart = useCartStore(state => state.totalCart());
+  const itemsCount = useCartStore(state => state.itemsCount());
 
   // Formulario de checkout (Datos del cliente que dicta)
   const [nombreCliente, setNombreCliente] = useState('');
@@ -37,6 +33,7 @@ export default function AsesorPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     const fetchCatalogo = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -61,37 +58,6 @@ export default function AsesorPage() {
     fetchCatalogo();
   }, []);
 
-  const addToCart = (prod: Producto) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === prod.id);
-      if (existing) {
-        if (existing.cantidad >= prod.stock) return prev;
-        return prev.map(item => item.id === prod.id ? { ...item, cantidad: item.cantidad + 1 } : item);
-      }
-      return [...prev, { ...prod, cantidad: 1 }];
-    });
-  };
-
-  const removeFromCart = (id: number) => {
-    setCart(prev => prev.filter(item => item.id !== id));
-  };
-
-  const updateQuantity = (id: number, delta: number) => {
-    setCart(prev => {
-      return prev.map(item => {
-        if (item.id === id) {
-          const newQ = item.cantidad + delta;
-          if (newQ > 0 && newQ <= item.stock) {
-            return { ...item, cantidad: newQ };
-          }
-        }
-        return item;
-      });
-    });
-  };
-
-  const totalCart = cart.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
-  const itemsCount = cart.reduce((acc, item) => acc + item.cantidad, 0);
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,7 +83,7 @@ export default function AsesorPage() {
       alert(`✅ ¡Pedido #${data.id} creado con éxito para ${nombreCliente}!`);
       
       // Limpiar carrito para el siguiente cliente
-      setCart([]);
+      clearCart();
       setNombreCliente('');
       setTelefonoCliente('');
       setDireccionEnvio('');
@@ -159,7 +125,7 @@ export default function AsesorPage() {
           className="relative p-3 bg-white text-slate-600 hover:text-[#4a6c6f] shadow-sm border border-slate-200 rounded-full transition-all hover:shadow-md"
         >
           <ShoppingCart className="w-6 h-6" />
-          {itemsCount > 0 && (
+          {isClient && itemsCount > 0 && (
             <span className="absolute top-0 right-0 w-6 h-6 bg-[#d62246] text-white text-xs font-bold rounded-full flex items-center justify-center transform translate-x-2 -translate-y-2 shadow-sm border-2 border-white">
               {itemsCount}
             </span>
@@ -225,7 +191,7 @@ export default function AsesorPage() {
       )}
 
       {/* Side panel / Bottom sheet del carrito */}
-      {isCartOpen && (
+      {isClient && isCartOpen && (
         <div className="fixed inset-0 z-50 flex sm:justify-end flex-col sm:flex-row">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)}></div>
           

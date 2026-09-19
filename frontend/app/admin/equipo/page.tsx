@@ -9,6 +9,7 @@ interface Miembro {
   correo: string;
   rol: string;
   puedeAlistar: boolean;
+  enRuta?: boolean;
 }
 
 export default function EquipoPage() {
@@ -109,6 +110,26 @@ export default function EquipoPage() {
     }
   };
 
+  const toggleEnRuta = async (miembro: Miembro) => {
+    if (!confirm(`¿Seguro que deseas cambiar el estado de ruta de ${miembro.nombre}?`)) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:3001/api/equipo/${miembro.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ enRuta: !miembro.enRuta })
+      });
+      if (res.ok) {
+        fetchEquipo();
+      }
+    } catch (error) {
+      console.error('Error toggling enRuta', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -156,9 +177,33 @@ export default function EquipoPage() {
                     <td className="px-6 py-4 font-medium text-slate-900">{miembro.nombre}</td>
                     <td className="px-6 py-4 text-slate-600">{miembro.correo}</td>
                     <td className="px-6 py-4">
-                      <span className="flex items-center gap-1 w-fit px-3 py-1 bg-[#e2e8ce]/50 text-[#4a6c6f] font-bold text-xs rounded-full capitalize">
-                        <Shield className="w-3 h-3" /> {miembro.rol} {miembro.rol === 'asesor' && miembro.puedeAlistar && '(Alista)'}
-                      </span>
+                      <div className="flex flex-col gap-2">
+                        <span className="flex items-center gap-1 w-fit px-3 py-1 bg-[#e2e8ce]/50 text-[#4a6c6f] font-bold text-xs rounded-full capitalize">
+                          <Shield className="w-3 h-3" /> {miembro.rol} {miembro.rol === 'asesor' && miembro.puedeAlistar && '(Alista)'}
+                        </span>
+                        {miembro.rol === 'conductor' && (
+                          <button
+                            onClick={() => toggleEnRuta(miembro)}
+                            className={`flex items-center justify-center gap-1 w-fit px-3 py-1 text-xs font-bold rounded-full transition-colors border ${
+                              miembro.enRuta
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {miembro.enRuta ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                En Ruta (Click para revertir)
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                En Bodega
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button 

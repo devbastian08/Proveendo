@@ -3,21 +3,20 @@
 import { LogOut, PackageSearch } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useAuthStore } from '@/store/authStore';
 
 export default function AsesorLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      setUser(JSON.parse(userStr));
-    }
+    setIsClient(true);
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    logout();
     router.push('/login');
   };
 
@@ -31,7 +30,7 @@ export default function AsesorLayout({ children }: { children: React.ReactNode }
       <header className="bg-white text-[#4a6c6f] shadow-sm border-b border-slate-200 sticky top-0 z-40">
         {/* Botones de acción derecha (Desktop) */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 hidden sm:flex items-center gap-3">
-          {user?.puedeAlistar && (
+          {isClient && user?.puedeAlistar && (
             <button 
               onClick={goToBodega}
               className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-[#4a6c6f] hover:bg-slate-50 rounded-full transition-colors border border-[#4a6c6f]/20 hover:border-[#4a6c6f]/50 shadow-sm"
@@ -51,7 +50,7 @@ export default function AsesorLayout({ children }: { children: React.ReactNode }
 
         {/* Botones de acción derecha (Móvil) */}
         <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex sm:hidden items-center gap-1">
-          {user?.puedeAlistar && (
+          {isClient && user?.puedeAlistar && (
             <button 
               onClick={goToBodega}
               className="flex items-center justify-center w-10 h-10 text-[#4a6c6f] hover:bg-slate-50 rounded-full transition-colors"

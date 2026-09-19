@@ -336,6 +336,12 @@ app.patch('/api/pedidos/:id/asignar', authMiddleware, async (req, res) => {
   if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
 
   try {
+    const conductorData = await prisma.usuario.findUnique({ where: { id: Number(conductorId) } });
+    if (!conductorData) return res.status(404).json({ error: 'Conductor no encontrado' });
+    if (conductorData.enRuta) {
+      return res.status(400).json({ error: 'El conductor ya salió a ruta y no puede recibir más pedidos.' });
+    }
+
     const existing = await prisma.pedido.findUnique({ where: { id: pedidoId }, include: { entrega: true } });
     if (!existing || existing.distribuidoraId !== distribuidora.id) {
       return res.status(404).json({ error: 'Pedido no encontrado' });
@@ -374,6 +380,33 @@ app.patch('/api/pedidos/:id/asignar', authMiddleware, async (req, res) => {
 });
 
 // Rutas de Conductor (Logística Fase 4)
+app.get('/api/conductor/estado', authMiddleware, async (req, res) => {
+  if (req.user.rol !== 'conductor') return res.status(403).json({ error: 'Solo para conductores' });
+  const user = await prisma.usuario.findUnique({ where: { id: req.user.id } });
+  return res.json({ enRuta: user.enRuta });
+});
+
+app.post('/api/conductor/iniciar-ruta', authMiddleware, async (req, res) => {
+  if (req.user.rol !== 'conductor') return res.status(403).json({ error: 'Solo para conductores' });
+  await prisma.usuario.update({ where: { id: req.user.id }, data: { enRuta: true } });
+  return res.json({ success: true, enRuta: true });
+});
+
+app.post('/api/conductor/finalizar-ruta', authMiddleware, async (req, res) => {
+  if (req.user.rol !== 'conductor') return res.status(403).json({ error: 'Solo para conductores' });
+  
+  const pendientes = await prisma.entrega.count({
+    where: { conductorId: req.user.id, estado: 'en_ruta' }
+  });
+  
+  if (pendientes > 0) {
+    return res.status(400).json({ error: 'Aún tienes entregas pendientes en esta ruta.' });
+  }
+  
+  await prisma.usuario.update({ where: { id: req.user.id }, data: { enRuta: false } });
+  return res.json({ success: true, enRuta: false });
+});
+
 app.get('/api/conductor/entregas', authMiddleware, async (req, res) => {
   if (req.user.rol !== 'conductor') {
     return res.status(403).json({ error: 'Solo para conductores' });
@@ -533,7 +566,7 @@ app.get('/api/equipo', authMiddleware, async (req, res) => {
 
   const equipo = await prisma.usuario.findMany({
     where: { distribuidoraTrabajoId: distribuidora.id },
-    select: { id: true, nombre: true, correo: true, rol: true, puedeAlistar: true }
+    select: { id: true, nombre: true, correo: true, rol: true, puedeAlistar: true, enRuta: true }
   });
   res.json(equipo);
 });
@@ -575,7 +608,7 @@ app.patch('/api/equipo/:id', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'No tienes permiso para modificar equipo' });
   }
 
-  const { puedeAlistar, rol, nombre, correo, contrasena } = req.body;
+  const { puedeAlistar, rol, nombre, correo, contrasena, enRuta } = req.body;
   const distribuidora = await getMyDistribuidora(req.user.id);
   if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
 
@@ -587,6 +620,7 @@ app.patch('/api/equipo/:id', authMiddleware, async (req, res) => {
 
     const dataToUpdate = {
       puedeAlistar: puedeAlistar !== undefined ? puedeAlistar : existing.puedeAlistar,
+      enRuta: enRuta !== undefined ? enRuta : existing.enRuta,
       rol: rol || existing.rol,
       nombre: nombre || existing.nombre,
       correo: correo || existing.correo

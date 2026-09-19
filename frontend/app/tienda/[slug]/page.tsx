@@ -107,6 +107,12 @@ export default function TiendaPage() {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0 || !distribuidora) return;
+
+    if (!checkoutForm.latitud || !checkoutForm.longitud) {
+      alert("Para garantizar que tu pedido llegue rápido y sin contratiempos a tu negocio, por favor toca el botón '📍 Compartir ubicación exacta' antes de enviar el pedido. Esto ayuda al conductor a encontrarte fácilmente.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -355,10 +361,14 @@ export default function TiendaPage() {
                                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                               );
                             }}
-                            className="flex-1 py-2 bg-blue-50 text-blue-700 font-bold rounded-xl border border-blue-100 hover:bg-blue-100 flex items-center justify-center gap-2 transition-colors"
+                            className={`flex-1 py-3 font-bold rounded-xl border flex items-center justify-center gap-2 transition-colors ${
+                              checkoutForm.latitud 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                                : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 shadow-sm animate-pulse'
+                            }`}
                           >
                             {gpsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-                            {checkoutForm.latitud ? '📍 Ubicación Capturada' : '📍 Usar mi ubicación actual'}
+                            {checkoutForm.latitud ? '📍 Ubicación exacta confirmada' : '📍 Compartir ubicación exacta (Requerido para entrega rápida)'}
                           </button>
                         </div>
                         <textarea 

@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { LogIn, Loader2 } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
 
 export default function LoginPage() {
   const router = useRouter();
+  const login = useAuthStore((state) => state.login);
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,10 +32,8 @@ export default function LoginPage() {
         throw new Error(data.error || 'Error al iniciar sesión');
       }
 
-      // MVP: Guardamos en localStorage. 
-      // En una app más avanzada usaríamos Cookies HTTP-Only y un Context de React.
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Guardamos en el estado global de Zustand (y localStorage)
+      login(data.user, data.token);
 
       // Redirección basada en ROLES (RBAC)
       if (data.user.rol === 'superadmin') {
