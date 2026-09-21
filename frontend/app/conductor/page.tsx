@@ -44,7 +44,7 @@ export default function ConductorPage() {
         return;
       }
       
-      const res = await fetch('http://localhost:3001/api/conductor/entregas', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/conductor/entregas`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -70,7 +70,7 @@ export default function ConductorPage() {
   const fetchEstado = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3001/api/conductor/estado', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/conductor/estado`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -98,7 +98,7 @@ export default function ConductorPage() {
           lastPingTime = now;
           const token = localStorage.getItem('token');
           if (token) {
-            fetch('http://localhost:3001/api/conductor/ubicacion', {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/conductor/ubicacion`, {
               method: 'POST',
               headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -128,7 +128,7 @@ export default function ConductorPage() {
       onConfirm: async () => {
         try {
           const token = localStorage.getItem('token');
-          const res = await fetch('http://localhost:3001/api/conductor/iniciar-ruta', {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/conductor/iniciar-ruta`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -159,7 +159,7 @@ export default function ConductorPage() {
       onConfirm: async () => {
         try {
           const token = localStorage.getItem('token');
-          const res = await fetch('http://localhost:3001/api/conductor/finalizar-ruta', {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/conductor/finalizar-ruta`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -185,7 +185,7 @@ export default function ConductorPage() {
     setActionLoadingId(pedidoId);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3001/api/conductor/entregas/${pedidoId}/entregado`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/conductor/entregas/${pedidoId}/entregado`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

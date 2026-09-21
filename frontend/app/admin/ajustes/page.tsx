@@ -41,7 +41,7 @@ export default function AjustesPage() {
   const fetchDistribuidora = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3001/api/distribuidora', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/distribuidora`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -128,7 +128,7 @@ export default function AjustesPage() {
       }
 
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3001/api/distribuidora', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/distribuidora`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

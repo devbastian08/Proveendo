@@ -112,7 +112,7 @@ export default function TiendasDirectorioPage() {
   useEffect(() => {
     const fetchTiendas = async () => {
       try {
-        const res = await fetch('http://localhost:3001/api/tiendas/directorio');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tiendas/directorio`);
         const data = await res.json();
         setTiendas(data);
       } catch (error) {
@@ -125,7 +125,7 @@ export default function TiendasDirectorioPage() {
     const fetchFrecuentes = async () => {
       if (checkoutForm.telefonoCliente) {
         try {
-          const res = await fetch(`http://localhost:3001/api/tiendas/frecuentes?telefono=${checkoutForm.telefonoCliente}`);
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/tiendas/frecuentes?telefono=${checkoutForm.telefonoCliente}`);
           const data = await res.json();
           setFrecuentes(data);
         } catch (error) {

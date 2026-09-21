@@ -56,7 +56,7 @@ export default function TiendaPage() {
   useEffect(() => {
     const fetchStore = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/tienda/${slug}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/tienda/${slug}`);
         const data = await res.json();
 
         if (!res.ok) {
@@ -102,7 +102,7 @@ export default function TiendaPage() {
 
     try {
       // 1. Crear el pedido en la base de datos
-      const res = await fetch('http://localhost:3001/api/pedidos', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/pedidos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -37,7 +37,7 @@ export default function AsesorPage() {
     const fetchCatalogo = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`http://localhost:3001/api/asesor/catalogo`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/asesor/catalogo`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -65,7 +65,7 @@ export default function AsesorPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('http://localhost:3001/api/pedidos', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/pedidos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

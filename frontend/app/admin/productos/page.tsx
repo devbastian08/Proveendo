@@ -35,7 +35,7 @@ export default function ProductosPage() {
   const fetchProductos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3001/api/productos', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/productos`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -127,8 +127,8 @@ export default function ProductosPage() {
       // 2. Determinar si es Crear (POST) o Editar (PATCH)
       const isEditing = !!editingProduct;
       const url = isEditing 
-        ? `http://localhost:3001/api/productos/${editingProduct.id}` 
-        : 'http://localhost:3001/api/productos';
+        ? `${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/productos/${editingProduct.id}` 
+        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/productos`;
       const method = isEditing ? 'PATCH' : 'POST';
 
       const res = await fetch(url, {
@@ -168,7 +168,7 @@ export default function ProductosPage() {
     
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:3001/api/productos/${productToDelete.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/productos/${productToDelete.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

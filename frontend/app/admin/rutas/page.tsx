@@ -26,7 +26,7 @@ export default function TorreControlPage() {
         return;
       }
       
-      const resDist = await fetch('http://localhost:3001/api/distribuidora', {
+      const resDist = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/distribuidora`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resDist.ok) {
@@ -36,7 +36,7 @@ export default function TorreControlPage() {
         }
       }
 
-      const resRutas = await fetch('http://localhost:3001/api/admin/torre-control', {
+      const resRutas = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/admin/torre-control`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resRutas.ok) {
@@ -68,7 +68,7 @@ export default function TorreControlPage() {
     setActionLoading(true);
     const token = localStorage.getItem('token');
     try {
-      await fetch(`http://localhost:3001/api/admin/torre-control/optimizar/${conductorId}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/admin/torre-control/optimizar/${conductorId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -83,7 +83,7 @@ export default function TorreControlPage() {
     setActionLoading(true);
     const token = localStorage.getItem('token');
     try {
-      await fetch(`http://localhost:3001/api/admin/torre-control/invertir/${conductorId}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/admin/torre-control/invertir/${conductorId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -110,7 +110,7 @@ export default function TorreControlPage() {
     setActionLoading(true);
     const token = localStorage.getItem('token');
     try {
-      await fetch(`http://localhost:3001/api/admin/torre-control/ordenar-manual/${conductorId}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/admin/torre-control/ordenar-manual/${conductorId}`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,

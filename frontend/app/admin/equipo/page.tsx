@@ -33,7 +33,7 @@ export default function EquipoPage() {
   const fetchEquipo = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3001/api/equipo', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/equipo`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -59,7 +59,7 @@ export default function EquipoPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const url = editingId ? `http://localhost:3001/api/equipo/${editingId}` : 'http://localhost:3001/api/equipo';
+      const url = editingId ? `${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/equipo/${editingId}` : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/equipo`;
       const method = editingId ? 'PATCH' : 'POST';
       
       const payload: any = { nombre, correo, rol, puedeAlistar };
@@ -97,7 +97,7 @@ export default function EquipoPage() {
   const toggleAlistar = async (miembro: Miembro) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3001/api/equipo/${miembro.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/equipo/${miembro.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +125,7 @@ export default function EquipoPage() {
     
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3001/api/equipo/${miembro.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/equipo/${miembro.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

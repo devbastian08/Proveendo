@@ -59,14 +59,14 @@ export default function PedidosPage() {
       setUserRole(user.rol || '');
       
       // Fetch Pedidos
-      const resPedidos = await fetch('http://localhost:3001/api/pedidos', {
+      const resPedidos = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/pedidos`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataPedidos = await resPedidos.json();
       setPedidos(Array.isArray(dataPedidos) ? dataPedidos : []);
 
       // Fetch Equipo (para asignar conductores)
-      const resEquipo = await fetch('http://localhost:3001/api/equipo', {
+      const resEquipo = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/equipo`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataEquipo = await resEquipo.json();
@@ -94,7 +94,7 @@ export default function PedidosPage() {
         payload.motivoReactivacion = motivo;
       }
       
-      const res = await fetch(`http://localhost:3001/api/pedidos/${id}/estado`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/pedidos/${id}/estado`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ export default function PedidosPage() {
     setActionLoadingId(id);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3001/api/pedidos/${id}/asignar`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/pedidos/${id}/asignar`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
