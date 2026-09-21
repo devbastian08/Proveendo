@@ -79,10 +79,11 @@ export default function TiendaPage() {
     e.preventDefault();
     if (cart.length === 0 || !distribuidora) return;
 
-    if (totalCart() < PEDIDO_MINIMO) {
+    const minimo = distribuidora.pedidoMinimo || 0;
+    if (totalCart() < minimo) {
       setAlertModal({
         title: 'Pedido mínimo no alcanzado',
-        message: `El pedido mínimo es de $${PEDIDO_MINIMO.toLocaleString()}. Te faltan $${(PEDIDO_MINIMO - totalCart()).toLocaleString()} para poder realizar el pedido.`,
+        message: `El pedido mínimo es de $${minimo.toLocaleString()}. Te faltan $${(minimo - totalCart()).toLocaleString()} para poder realizar el pedido.`,
         isError: true
       });
       return;

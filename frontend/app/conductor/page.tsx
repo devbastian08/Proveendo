@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Loader2, CheckCircle2, PhoneCall, Navigation, PackageOpen, ListOrdered, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 
+const LeafletMap = dynamic(() => import('./MapComponent'), {
+  ssr: false,
+  loading: () => <div className="w-full h-80 bg-slate-100 animate-pulse rounded-2xl flex items-center justify-center text-slate-400 font-medium">Cargando mapa interactivo...</div>
+});
 interface Entrega {
   id: number;
   pedidoId: number;
@@ -25,7 +30,10 @@ export default function ConductorPage() {
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'pendientes' | 'entregadas'>('pendientes');
   const [enRuta, setEnRuta] = useState(false);
-  
+  const [modal, setModal] = useState<{ isOpen: boolean; title: string; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void } | null>(null);
+  const [rutaGeometry, setRutaGeometry] = useState<any>(null);
+  const [origen, setOrigen] = useState<{lat: number, lng: number} | null>(null);
+
   const router = useRouter();
 
   const fetchEntregas = async () => {
@@ -35,13 +43,20 @@ export default function ConductorPage() {
         router.push('/login');
         return;
       }
+      
       const res = await fetch('http://localhost:3001/api/conductor/entregas', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
       
       if (res.ok) {
-        setEntregas(Array.isArray(data) ? data : []);
+        if (Array.isArray(data)) {
+          setEntregas(data);
+        } else {
+          setEntregas(data.entregas || []);
+          setRutaGeometry(data.rutaGeometry || null);
+          setOrigen(data.origen || null);
+        }
       } else {
         if (res.status === 401 || res.status === 403) router.push('/login');
       }
@@ -70,42 +85,100 @@ export default function ConductorPage() {
   useEffect(() => {
     fetchEntregas();
     fetchEstado();
+
+    // Iniciar rastreo GPS en segundo plano
+    if (!('geolocation' in navigator)) return;
+    
+    let lastPingTime = 0;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const now = Date.now();
+        // Ping al servidor cada 20 segundos
+        if (now - lastPingTime > 20000) {
+          lastPingTime = now;
+          const token = localStorage.getItem('token');
+          if (token) {
+            fetch('http://localhost:3001/api/conductor/ubicacion', {
+              method: 'POST',
+              headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ 
+                latitud: pos.coords.latitude, 
+                longitud: pos.coords.longitude 
+              })
+            }).catch(err => console.error("Error enviando ping GPS", err));
+          }
+        }
+      },
+      (err) => console.warn('GPS ping falló:', err),
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   const iniciarRuta = async () => {
-    if (!confirm('¿Seguro que deseas iniciar tu ruta? La bodega no podrá asignarte más pedidos hasta que finalices.')) return;
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3001/api/conductor/iniciar-ruta', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) setEnRuta(true);
-    } catch (err) {
-      console.error(err);
-    }
+    setModal({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Iniciar Ruta',
+      message: '¿Seguro que deseas iniciar tu ruta? La bodega no podrá asignarte más pedidos hasta que finalices.',
+      onConfirm: async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch('http://localhost:3001/api/conductor/iniciar-ruta', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) setEnRuta(true);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    });
   };
 
   const finalizarRuta = async () => {
     if (entregas.length > 0) {
-      alert('Aún tienes entregas pendientes.');
+      setModal({
+        isOpen: true,
+        type: 'alert',
+        title: 'Acción no permitida',
+        message: 'Aún tienes entregas pendientes.'
+      });
       return;
     }
-    if (!confirm('¿Seguro que deseas finalizar tu ruta?')) return;
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3001/api/conductor/finalizar-ruta', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) setEnRuta(false);
-      else {
-        const data = await res.json();
-        alert(data.error);
+    
+    setModal({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Finalizar Ruta',
+      message: '¿Seguro que deseas finalizar tu ruta?',
+      onConfirm: async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch('http://localhost:3001/api/conductor/finalizar-ruta', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            setEnRuta(false);
+          } else {
+            const data = await res.json();
+            setModal({
+              isOpen: true,
+              type: 'alert',
+              title: 'Error',
+              message: data.error || 'Ocurrió un error al finalizar la ruta.'
+            });
+          }
+        } catch (err) {
+          console.error(err);
+        }
       }
-    } catch (err) {
-      console.error(err);
-    }
+    });
   };
 
   const marcarEntregado = async (pedidoId: number) => {
@@ -141,6 +214,35 @@ export default function ConductorPage() {
 
   return (
     <div className="space-y-4">
+      {/* Custom Modal */}
+      {modal && modal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-xl p-6 w-full max-w-sm animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">{modal.title}</h3>
+            <p className="text-slate-600 mb-6">{modal.message}</p>
+            <div className="flex gap-3">
+              {modal.type === 'confirm' && (
+                <button 
+                  onClick={() => setModal(null)}
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+                >
+                  Cancelar
+                </button>
+              )}
+              <button 
+                onClick={() => {
+                  if (modal.onConfirm) modal.onConfirm();
+                  if (modal.type === 'alert') setModal(null);
+                }}
+                className={`flex-1 py-3 text-white font-bold rounded-xl transition-colors ${modal.type === 'alert' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+              >
+                {modal.type === 'alert' ? 'Entendido' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Saludo */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -165,6 +267,16 @@ export default function ConductorPage() {
           )}
         </div>
       </div>
+
+      {/* Mapa Visual Mapbox */}
+      {entregas.length > 0 && (
+        <div className="bg-white p-3 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-3 relative">
+           {/* Contenedor del Mapa Leaflet */}
+           <div className="w-full h-80 rounded-2xl shadow-inner border border-slate-100 overflow-hidden relative z-0">
+              <LeafletMap entregas={entregas} origen={origen} rutaGeometry={rutaGeometry} />
+           </div>
+        </div>
+      )}
 
       {!enRuta && entregas.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center space-y-4">
@@ -206,98 +318,57 @@ export default function ConductorPage() {
           <p className="text-slate-500">No tienes más pedidos asignados para entregar en este momento.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {entregas.map((entrega, index) => (
-            <div key={entrega.id} className="bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-[#56cbf9]" />
-              
-              <div className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase">
-                    Parada #{index + 1}
-                  </span>
-                  <span className="text-lg font-black text-slate-900">
-                    ${entrega.pedido.total.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="space-y-3">
+            <div key={entrega.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex flex-col gap-3">
+              <div className="flex justify-between items-start">
+                <div className="flex gap-3">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-black shrink-0 text-lg">
+                    {index + 1}
+                  </div>
                   <div>
-                    <h3 className="font-bold text-slate-900 text-lg leading-tight">
+                    <h3 className="font-bold text-slate-900 leading-tight">
                       {entrega.pedido.nombreCliente}
                     </h3>
-                    <p className="text-slate-500 text-sm flex items-start gap-1 mt-1">
-                      <MapPin className="w-4 h-4 text-[#4a6c6f] mt-0.5 shrink-0" />
-                      {entrega.pedido.direccionEnvio}
+                    <p className="text-slate-500 text-xs flex items-start gap-1 mt-1 pr-2">
+                      <MapPin className="w-3 h-3 text-[#4a6c6f] mt-0.5 shrink-0" />
+                      <span className="line-clamp-2">{entrega.pedido.direccionEnvio}</span>
                     </p>
                   </div>
-                  
-                  <div className="text-sm bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-2 font-medium text-slate-600">
-                    <ListOrdered className="w-4 h-4 text-[#4a6c6f]" />
-                    {entrega.pedido.detalles.length} cajas/ítems para bajar
-                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                   <span className="text-sm font-black text-slate-900 block">
+                     ${entrega.pedido.total.toLocaleString()}
+                   </span>
+                   <span className="text-xs text-slate-400 font-medium">{entrega.pedido.detalles.length} cajas</span>
                 </div>
               </div>
 
-              {/* Botones de Acción (Llamar / Mapas) */}
-              <div className="px-5 pb-5">
+              {/* Botones de Acción (Compactos) */}
+              <div className="flex gap-2 mt-1">
                 <a 
                   href={`tel:${entrega.pedido.telefonoCliente}`}
-                  className="flex w-full items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-2xl font-bold transition-colors mb-3"
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-bold transition-colors"
                 >
-                  <PhoneCall className="w-5 h-5" /> Llamar Cliente
+                  <PhoneCall className="w-4 h-4" /> Llamar
                 </a>
                 
                 {enRuta ? (
-                  <div className="bg-slate-50 p-4 border-t border-slate-100 flex gap-3 rounded-2xl">
-                    <button 
-                      onClick={() => {
-                        // Construir enlace de ruta
-                        const destLat = entrega.pedido.latitud;
-                        const destLng = entrega.pedido.longitud;
-                        
-                        let mapsUrl = '';
-                        if (destLat && destLng) {
-                          // Si hay GPS, construimos la ruta
-                          mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}`;
-                          
-                          // Si no es la primera entrega, usamos la entrega anterior como origen para dibujar la ruta continua
-                          if (index > 0) {
-                            const prevLat = entregas[index - 1].pedido.latitud;
-                            const prevLng = entregas[index - 1].pedido.longitud;
-                            if (prevLat && prevLng) {
-                              mapsUrl += `&origin=${prevLat},${prevLng}`;
-                            }
-                          }
-                        } else {
-                          // Búsqueda por texto fallback
-                          mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.pedido.direccionEnvio || '')}`;
-                        }
-                        
-                        window.open(mapsUrl, '_blank');
-                      }}
-                      className="flex-1 flex items-center justify-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 py-3 rounded-xl font-bold transition-colors"
-                    >
-                      <Navigation className="w-5 h-5" />
-                      📍 Navegar Mapa
-                    </button>
-                    
-                    <button 
-                      onClick={() => marcarEntregado(entrega.pedidoId)}
-                      disabled={actionLoadingId === entrega.pedidoId}
-                      className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition-colors disabled:opacity-50"
-                    >
-                      {actionLoadingId === entrega.pedidoId ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="w-5 h-5" />
-                      )}
-                      Entregado
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => marcarEntregado(entrega.pedidoId)}
+                    disabled={actionLoadingId === entrega.pedidoId}
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                  >
+                    {actionLoadingId === entrega.pedidoId ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4" />
+                    )}
+                    Entregado
+                  </button>
                 ) : (
-                  <div className="bg-amber-50 p-3 rounded-xl text-amber-700 text-center text-sm font-medium border border-amber-200">
-                    Inicia la ruta para poder entregar y navegar a este pedido.
+                  <div className="flex-1 flex items-center justify-center bg-amber-50 text-amber-700 text-xs font-bold rounded-xl border border-amber-200 px-2 text-center">
+                    Inicia ruta para entregar
                   </div>
                 )}
               </div>

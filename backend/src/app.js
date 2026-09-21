@@ -380,6 +380,22 @@ app.patch('/api/pedidos/:id/asignar', authMiddleware, async (req, res) => {
 });
 
 // Rutas de Conductor (Logística Fase 4)
+app.post('/api/conductor/ubicacion', authMiddleware, async (req, res) => {
+  if (req.user.rol !== 'conductor') return res.status(403).json({ error: 'Solo para conductores' });
+  const { latitud, longitud } = req.body;
+  
+  try {
+    await prisma.usuario.update({
+      where: { id: req.user.id },
+      data: { latitud, longitud }
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Error guardando ubicación GPS:", err);
+    return res.status(500).json({ error: 'Error guardando ubicación' });
+  }
+});
+
 app.get('/api/conductor/estado', authMiddleware, async (req, res) => {
   if (req.user.rol !== 'conductor') return res.status(403).json({ error: 'Solo para conductores' });
   const user = await prisma.usuario.findUnique({ where: { id: req.user.id } });
@@ -424,49 +440,53 @@ app.get('/api/conductor/entregas', authMiddleware, async (req, res) => {
             detalles: { include: { producto: true } }
           }
         } 
-      }
+      },
+      orderBy: { orden: 'asc' } // El Admin dicta el orden
     });
 
-    // ----------------------------------------------------
-    // ALGORITMO DE RUTEO INTELIGENTE (Nearest Neighbor)
-    // ----------------------------------------------------
-    if (entregas.length > 1) {
-      let currentLat = distribuidora.latitud || 2.9273; // Por defecto latitud de Neiva si la bodega no tiene GPS
-      let currentLng = distribuidora.longitud || -75.28189;
+    let rutaGeometry = null;
+    let origen = null;
+    
+    if (entregas.length > 0) {
+      let startLat = distribuidora.latitud || 2.9273;
+      let startLng = distribuidora.longitud || -75.28189;
+      origen = { lat: startLat, lng: startLng };
       
-      const rutaOptimizada = [];
-      const entregasPendientes = [...entregas];
-
-      while (entregasPendientes.length > 0) {
-        let nearestIndex = 0;
-        let minDistance = Infinity;
-
-        // Buscar la entrega más cercana al punto actual
-        for (let i = 0; i < entregasPendientes.length; i++) {
-          const e = entregasPendientes[i];
-          const dist = calcularDistancia(currentLat, currentLng, e.pedido.latitud, e.pedido.longitud);
+      const validEntregas = entregas.filter(e => e.pedido.latitud && e.pedido.longitud);
+      
+      if (process.env.ORS_API_KEY && validEntregas.length > 0) {
+        try {
+          const orderedCoords = [];
+          orderedCoords.push([startLng, startLat]); // Start
           
-          if (dist < minDistance) {
-            minDistance = dist;
-            nearestIndex = i;
-          }
-        }
+          validEntregas.forEach(e => {
+            orderedCoords.push([e.pedido.longitud, e.pedido.latitud]);
+          });
+          
+          orderedCoords.push([startLng, startLat]); // End (Viaje redondo)
 
-        // Remover la más cercana y añadirla a la ruta optimizada
-        const nextStop = entregasPendientes.splice(nearestIndex, 1)[0];
-        rutaOptimizada.push(nextStop);
-        
-        // Actualizar nuestro "punto actual" al GPS de esa entrega, si lo tiene
-        if (nextStop.pedido.latitud && nextStop.pedido.longitud) {
-          currentLat = nextStop.pedido.latitud;
-          currentLng = nextStop.pedido.longitud;
+          // Llamada directa a Directions API (ya no optimizamos aquí, el Admin lo hace)
+          if (orderedCoords.length > 1) {
+            const dirRes = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson", {
+              method: 'POST',
+              headers: {
+                'Authorization': process.env.ORS_API_KEY,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ coordinates: orderedCoords, language: "es" })
+            });
+            const dirData = await dirRes.json();
+            if (dirData.features && dirData.features.length > 0) {
+              rutaGeometry = dirData.features[0].geometry;
+            }
+          }
+        } catch (err) {
+          console.error("Error llamando a ORS Directions:", err);
         }
       }
-      
-      entregas = rutaOptimizada;
     }
 
-    return res.json(entregas);
+    return res.json({ entregas, rutaGeometry, origen });
   } catch (error) {
     console.error("Error obteniendo entregas:", error);
     return res.status(500).json({ error: 'Error al obtener entregas' });
@@ -903,6 +923,210 @@ app.post('/api/pedidos', async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 });
+
+// ----------------------------------------------------
+// TORRE DE CONTROL (Administrador)
+// ----------------------------------------------------
+app.get('/api/admin/torre-control', authMiddleware, async (req, res) => {
+  if (req.user.rol !== 'administrador' && req.user.rol !== 'distribuidor') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  const distribuidora = await getMyDistribuidora(req.user.id);
+  
+  try {
+    const conductores = await prisma.usuario.findMany({
+      where: { 
+        distribuidoraTrabajoId: distribuidora.id, 
+        rol: 'conductor',
+        entregas: {
+          some: { estado: 'en_ruta' }
+        }
+      },
+      select: {
+        id: true,
+        nombre: true,
+        latitud: true,
+        longitud: true,
+        entregas: {
+          where: { estado: 'en_ruta' },
+          orderBy: { orden: 'asc' },
+          include: { 
+            pedido: { include: { detalles: { include: { producto: true } } } } 
+          }
+        }
+      }
+    });
+
+    // Enriquecer con rutaGeometry (para que el Admin vea las calles, igual que el conductor)
+    let startLat = distribuidora.latitud || 2.9273;
+    let startLng = distribuidora.longitud || -75.28189;
+
+    // Caché en memoria para evitar quemar la cuota de ORS
+    if (!global.routeGeometryCache) {
+      global.routeGeometryCache = new Map();
+    }
+
+    for (const c of conductores) {
+      c.rutaGeometry = null;
+      if (c.entregas && c.entregas.length > 0 && process.env.ORS_API_KEY) {
+        const orderedCoords = [];
+        orderedCoords.push([startLng, startLat]);
+        c.entregas.forEach(e => {
+          if (e.pedido.latitud && e.pedido.longitud) {
+            orderedCoords.push([e.pedido.longitud, e.pedido.latitud]);
+          }
+        });
+        orderedCoords.push([startLng, startLat]);
+
+        if (orderedCoords.length > 1) {
+          const routeHash = c.id + '_' + orderedCoords.map(c => `${c[0]},${c[1]}`).join('|');
+          
+          if (global.routeGeometryCache.has(routeHash)) {
+            c.rutaGeometry = global.routeGeometryCache.get(routeHash);
+          } else {
+            try {
+              const dirRes = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson", {
+                method: 'POST',
+                headers: {
+                  'Authorization': process.env.ORS_API_KEY,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ coordinates: orderedCoords, language: "es" })
+              });
+              
+              if (dirRes.ok) {
+                const dirData = await dirRes.json();
+                if (dirData.features && dirData.features.length > 0) {
+                  c.rutaGeometry = dirData.features[0].geometry;
+                  global.routeGeometryCache.set(routeHash, c.rutaGeometry);
+                }
+              } else {
+                console.warn("ORS API límite alcanzado o error:", await dirRes.text());
+              }
+            } catch (err) {
+              console.error("Error obteniendo ruta para conductor " + c.id, err);
+            }
+          }
+        }
+      }
+    }
+
+    return res.json(conductores);
+  } catch (error) {
+    return res.status(500).json({ error: 'Error obteniendo datos' });
+  }
+});
+
+app.post('/api/admin/torre-control/optimizar/:conductorId', authMiddleware, async (req, res) => {
+  if (req.user.rol !== 'administrador' && req.user.rol !== 'distribuidor') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  const distribuidora = await getMyDistribuidora(req.user.id);
+  const conductorId = parseInt(req.params.conductorId);
+
+  try {
+    const entregas = await prisma.entrega.findMany({
+      where: { conductorId, estado: 'en_ruta' },
+      include: { pedido: true }
+    });
+
+    const validEntregas = entregas.filter(e => e.pedido.latitud && e.pedido.longitud);
+    if (!process.env.ORS_API_KEY || validEntregas.length === 0) {
+      return res.status(400).json({ error: 'No se puede optimizar (Faltan coordenadas o API Key)' });
+    }
+
+    let startLat = distribuidora.latitud || 2.9273;
+    let startLng = distribuidora.longitud || -75.28189;
+
+    const payload = {
+      jobs: validEntregas.map((e, index) => ({
+        id: index + 1,
+        location: [e.pedido.longitud, e.pedido.latitud]
+      })),
+      vehicles: [
+        {
+          id: 1,
+          profile: "driving-car",
+          start: [startLng, startLat],
+          end: [startLng, startLat]
+        }
+      ]
+    };
+
+    const optRes = await fetch("https://api.openrouteservice.org/optimization", {
+      method: 'POST',
+      headers: {
+        'Authorization': process.env.ORS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    const optData = await optRes.json();
+
+    if (optData.code === 0 && optData.routes && optData.routes.length > 0) {
+      const updates = [];
+      let currentOrder = 1;
+
+      optData.routes[0].steps.forEach(step => {
+        if (step.type === 'job') {
+          const originalIndex = step.job - 1;
+          const entregaId = validEntregas[originalIndex].id;
+          updates.push(
+            prisma.entrega.update({ where: { id: entregaId }, data: { orden: currentOrder++ } })
+          );
+        }
+      });
+
+      await prisma.$transaction(updates);
+      return res.json({ success: true, message: 'Ruta optimizada' });
+    } else {
+      return res.status(500).json({ error: 'Error del motor ORS' });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+app.post('/api/admin/torre-control/invertir/:conductorId', authMiddleware, async (req, res) => {
+  if (req.user.rol !== 'administrador' && req.user.rol !== 'distribuidor') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  const conductorId = parseInt(req.params.conductorId);
+  try {
+    const entregas = await prisma.entrega.findMany({
+      where: { conductorId, estado: 'en_ruta' },
+      orderBy: { orden: 'asc' }
+    });
+    
+    // Invertir arreglo y asignar nuevos órdenes secuenciales
+    const reversed = [...entregas].reverse();
+    const updates = reversed.map((e, index) => 
+      prisma.entrega.update({ where: { id: e.id }, data: { orden: index + 1 } })
+    );
+    
+    await prisma.$transaction(updates);
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ error: 'Error al invertir ruta' });
+  }
+});
+
+app.post('/api/admin/torre-control/ordenar-manual/:conductorId', authMiddleware, async (req, res) => {
+  if (req.user.rol !== 'administrador' && req.user.rol !== 'distribuidor') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  const { ordenamiento } = req.body; // Array de { id: idEntrega, orden: 1,2,3 }
+  try {
+    const updates = ordenamiento.map(o => 
+      prisma.entrega.update({ where: { id: o.id }, data: { orden: o.orden } })
+    );
+    await prisma.$transaction(updates);
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ error: 'Error guardando orden manual' });
+  }
+});
+
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

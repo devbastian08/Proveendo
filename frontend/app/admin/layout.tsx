@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Package, ShoppingCart, LogOut, Menu, X, Users, Store } from 'lucide-react';
+import { Package, ShoppingCart, LogOut, Menu, X, Users, Store, Navigation } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -50,6 +50,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: <ShoppingCart className="w-5 h-5" />,
       href: '/admin/pedidos',
       roles: ['administrador', 'asesor', 'distribuidor']
+    },
+    {
+      title: 'Control de Logística',
+      icon: <Navigation className="w-5 h-5" />,
+      href: '/admin/rutas',
+      roles: ['administrador', 'distribuidor']
     },
     {
       title: 'Clientes (Pronto)',

@@ -18,6 +18,8 @@ model Usuario {
   rol                    String         // Ej: "distribuidor", "admin", "asesor"
   puedeAlistar           Boolean        @default(false)
   enRuta                 Boolean        @default(false)
+  latitud                Float?         // Para tracking GPS de conductores
+  longitud               Float?
   
   // Relación si el usuario es DUEÑO
   distribuidora          Distribuidora? @relation("DistribuidoraOwner")
@@ -116,6 +118,7 @@ model Entrega {
   pedidoId    Int      @unique
   conductorId Int?
   estado      String
+  orden       Int      @default(0)
   pedido      Pedido   @relation(fields: [pedidoId], references: [id])
   conductor   Usuario? @relation(fields: [conductorId], references: [id])
 }
