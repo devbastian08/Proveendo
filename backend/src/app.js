@@ -553,7 +553,7 @@ app.get('/api/distribuidora', authMiddleware, async (req, res) => {
 });
 
 app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
-  const { nombre, slug, telefono, descripcion, latitud, longitud, pedidoMinimo, tiempoEntrega, envioGratis } = req.body;
+  const { nombre, slug, telefono, descripcion, latitud, longitud, pedidoMinimo, tiempoEntrega, envioGratis, logoUrl, portadaUrl } = req.body;
   
   const distribuidora = await getMyDistribuidora(req.user.id);
   if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
@@ -582,7 +582,9 @@ app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
         longitud: longitud !== undefined ? longitud : distribuidora.longitud,
         pedidoMinimo: pedidoMinimo !== undefined ? pedidoMinimo : distribuidora.pedidoMinimo,
         tiempoEntrega: tiempoEntrega !== undefined ? tiempoEntrega : distribuidora.tiempoEntrega,
-        envioGratis: envioGratis !== undefined ? envioGratis : distribuidora.envioGratis
+        envioGratis: envioGratis !== undefined ? envioGratis : distribuidora.envioGratis,
+        logoUrl: logoUrl !== undefined ? logoUrl : distribuidora.logoUrl,
+        portadaUrl: portadaUrl !== undefined ? portadaUrl : distribuidora.portadaUrl
       }
     });
     return res.json(updated);
