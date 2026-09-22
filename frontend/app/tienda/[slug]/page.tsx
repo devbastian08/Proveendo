@@ -153,19 +153,36 @@ export default function TiendaPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
+      {/* Portada de la Tienda */}
+      {distribuidora.portadaUrl && (
+        <div className="w-full h-48 sm:h-64 lg:h-80 relative overflow-hidden bg-slate-200">
+          <img 
+            src={distribuidora.portadaUrl} 
+            alt={`Portada de ${distribuidora.nombre}`} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
       {/* Header Distribuidora */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/tiendas" className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors hidden sm:block">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-[#e2e8ce] text-[#4a6c6f] rounded-full flex items-center justify-center font-bold text-xl">
-                {distribuidora.nombre.charAt(0).toUpperCase()}
-              </div>
+              {distribuidora.logoUrl ? (
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-4 border-white shadow-md shrink-0 ${distribuidora.portadaUrl ? '-mt-10 relative z-10 sm:mt-0 sm:z-auto' : ''}`}>
+                  <img src={distribuidora.logoUrl} alt="Logo" className="w-full h-full object-cover bg-white" />
+                </div>
+              ) : (
+                <div className="w-12 h-12 bg-[#e2e8ce] text-[#4a6c6f] rounded-full flex items-center justify-center font-bold text-xl shrink-0">
+                  {distribuidora.nombre.charAt(0).toUpperCase()}
+                </div>
+              )}
               <div>
-                <h1 className="font-bold text-slate-900 text-lg leading-tight">{distribuidora.nombre}</h1>
+                <h1 className="font-bold text-slate-900 text-lg sm:text-xl leading-tight">{distribuidora.nombre}</h1>
                 <p className="text-sm text-slate-500 flex items-center gap-1">
                   <CheckCircle className="w-3 h-3 text-emerald-500" /> Distribuidor Autorizado
                 </p>
