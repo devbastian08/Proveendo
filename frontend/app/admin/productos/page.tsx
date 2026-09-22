@@ -31,6 +31,7 @@ export default function ProductosPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [alertModal, setAlertModal] = useState<{title: string, message: string, isError: boolean} | null>(null);
 
   const fetchProductos = async () => {
     try {
@@ -176,7 +177,7 @@ export default function ProductosPage() {
       if (!res.ok) throw new Error(data.error || 'Error al eliminar');
       fetchProductos();
     } catch (err: any) {
-      alert(err.message);
+      setAlertModal({ title: "Error al eliminar", message: err.message || "Ocurrió un error al intentar eliminar el producto.", isError: true });
     } finally {
       setProductToDelete(null);
     }
@@ -419,6 +420,29 @@ export default function ProductosPage() {
           </div>
         </div>
       )}
+      {/* MODAL DE ALERTAS PERSONALIZADAS */}
+      {alertModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex items-start gap-4 mb-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${alertModal.isError ? 'bg-red-100 text-red-500' : 'bg-emerald-100 text-emerald-500'}`}>
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 leading-tight mb-1">{alertModal.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{alertModal.message}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setAlertModal(null)}
+              className={`w-full py-3 rounded-xl font-bold text-sm transition-colors ${alertModal.isError ? 'bg-red-50 hover:bg-red-100 text-red-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'}`}
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

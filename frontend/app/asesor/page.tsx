@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, ShoppingCart, Plus, Minus, Store, Phone, MapPin, CheckCircle, Trash2 } from 'lucide-react';
+import { Loader2, ShoppingCart, Plus, Minus, Store, Phone, MapPin, CheckCircle, Trash2, AlertCircle } from 'lucide-react';
 import { useCartStore, Producto } from '@/store/cartStore';
 
 interface Distribuidora {
@@ -31,6 +31,7 @@ export default function AsesorPage() {
   const [telefonoCliente, setTelefonoCliente] = useState('');
   const [direccionEnvio, setDireccionEnvio] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [alertModal, setAlertModal] = useState<{title: string, message: string, isError: boolean} | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -80,7 +81,7 @@ export default function AsesorPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al procesar el pedido');
 
-      alert(`✅ ¡Pedido #${data.id} creado con éxito para ${nombreCliente}!`);
+      setAlertModal({ title: "¡Pedido Exitoso!", message: `El pedido #${data.id} fue creado con éxito para ${nombreCliente}.`, isError: false });
       
       // Limpiar carrito para el siguiente cliente
       clearCart();
@@ -90,7 +91,7 @@ export default function AsesorPage() {
       setIsCartOpen(false);
       
     } catch (err: any) {
-      alert(err.message);
+      setAlertModal({ title: "Error en el pedido", message: err.message || "No se pudo procesar el pedido.", isError: true });
     } finally {
       setIsSubmitting(false);
     }
@@ -282,6 +283,29 @@ export default function AsesorPage() {
           </div>
         </div>
       )}
+      {/* MODAL DE ALERTAS PERSONALIZADAS */}
+      {alertModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex items-start gap-4 mb-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${alertModal.isError ? 'bg-red-100 text-red-500' : 'bg-emerald-100 text-emerald-500'}`}>
+                {alertModal.isError ? <AlertCircle className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 leading-tight mb-1">{alertModal.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{alertModal.message}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setAlertModal(null)}
+              className={`w-full py-3 rounded-xl font-bold text-sm transition-colors ${alertModal.isError ? 'bg-red-50 hover:bg-red-100 text-red-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'}`}
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
