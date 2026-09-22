@@ -22,6 +22,8 @@ interface Distribuidora {
   slug: string;
   telefono: string;
   pedidoMinimo?: number;
+  portadaUrl?: string | null;
+  logoUrl?: string | null;
 }
 
 interface CartItem extends Producto {
