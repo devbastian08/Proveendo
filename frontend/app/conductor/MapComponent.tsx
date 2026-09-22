@@ -37,7 +37,8 @@ const BoundsComponent = ({ bounds }: { bounds: L.LatLngBounds }) => {
     if (bounds.isValid()) {
       map.fitBounds(bounds, { padding: [40, 40] });
     }
-  }, [bounds, map]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]); // Se ejecuta solo al montar el mapa para no robarle el foco al usuario
   return null;
 };
 

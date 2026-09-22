@@ -80,7 +80,7 @@ export default function LoginPage() {
                   type="email"
                   value={correo}
                   onChange={(e) => setCorreo(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[#56cbf9] focus:border-[#56cbf9] outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[#56cbf9] focus:border-[#56cbf9] outline-none transition-all text-slate-900 bg-white"
                   placeholder="ejemplo@proveendo.com"
                   required
                 />
@@ -91,7 +91,7 @@ export default function LoginPage() {
                   type="password"
                   value={contrasena}
                   onChange={(e) => setContrasena(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[#56cbf9] focus:border-[#56cbf9] outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[#56cbf9] focus:border-[#56cbf9] outline-none transition-all text-slate-900 bg-white"
                   placeholder="••••••••"
                   required
                 />

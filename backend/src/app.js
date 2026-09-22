@@ -465,19 +465,36 @@ app.get('/api/conductor/entregas', authMiddleware, async (req, res) => {
           
           orderedCoords.push([startLng, startLat]); // End (Viaje redondo)
 
-          // Llamada directa a Directions API (ya no optimizamos aquí, el Admin lo hace)
+          // Caché en memoria para evitar quemar la cuota de ORS
+          if (!global.routeGeometryCache) {
+            global.routeGeometryCache = new Map();
+          }
+
           if (orderedCoords.length > 1) {
-            const dirRes = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson", {
-              method: 'POST',
-              headers: {
-                'Authorization': process.env.ORS_API_KEY,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ coordinates: orderedCoords, language: "es" })
-            });
-            const dirData = await dirRes.json();
-            if (dirData.features && dirData.features.length > 0) {
-              rutaGeometry = dirData.features[0].geometry;
+            // Generar un hash único de la ruta usando el ID del conductor y las coordenadas
+            const routeHash = req.user.id + '_' + orderedCoords.map(c => `${c[0]},${c[1]}`).join('|');
+            
+            if (global.routeGeometryCache.has(routeHash)) {
+              rutaGeometry = global.routeGeometryCache.get(routeHash);
+            } else {
+              const dirRes = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson", {
+                method: 'POST',
+                headers: {
+                  'Authorization': process.env.ORS_API_KEY,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ coordinates: orderedCoords, language: "es" })
+              });
+              
+              if (dirRes.ok) {
+                const dirData = await dirRes.json();
+                if (dirData.features && dirData.features.length > 0) {
+                  rutaGeometry = dirData.features[0].geometry;
+                  global.routeGeometryCache.set(routeHash, rutaGeometry);
+                }
+              } else {
+                console.warn("ORS API límite alcanzado o error:", await dirRes.text());
+              }
             }
           }
         } catch (err) {
