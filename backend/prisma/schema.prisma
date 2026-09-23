@@ -48,6 +48,10 @@ model Distribuidora {
   tiempoEntrega String?
   envioGratis   Boolean    @default(false)
   
+  // Numeración de Pedidos
+  prefijoPedidos String?
+  contadorPedidos Int      @default(0)
+  
   usuarioId   Int        @unique // Dueño
   usuario     Usuario    @relation("DistribuidoraOwner", fields: [usuarioId], references: [id])
   
@@ -88,6 +92,7 @@ model Pedido {
   total           Float
   fecha           DateTime        @default(now())
   motivoReactivacion String?      // Para guardar el motivo cuando un pedido entregado es devuelto a pendiente
+  codigo          String?         @unique // Código personalizado del pedido (ej. ST-0001)
   
   distribuidora   Distribuidora   @relation(fields: [distribuidoraId], references: [id])
   tendero         Tendero?        @relation(fields: [tenderoId], references: [id])

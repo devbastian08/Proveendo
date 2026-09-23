@@ -82,7 +82,7 @@ export default function AsesorPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al procesar el pedido');
 
-      setAlertModal({ title: "¡Pedido Exitoso!", message: `El pedido #${data.id} fue creado con éxito para ${nombreCliente}.`, isError: false });
+      setAlertModal({ title: "¡Pedido Exitoso!", message: `El pedido #${data.codigo || data.id.toString().padStart(4, '0')} fue creado con éxito para ${nombreCliente}.`, isError: false });
       
       // Limpiar carrito para el siguiente cliente
       clearCart();

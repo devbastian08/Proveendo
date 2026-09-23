@@ -28,6 +28,8 @@ export default function AjustesPage() {
   const [pedidoMinimo, setPedidoMinimo] = useState('');
   const [tiempoEntrega, setTiempoEntrega] = useState('');
   const [envioGratis, setEnvioGratis] = useState(false);
+  const [prefijoPedidos, setPrefijoPedidos] = useState('');
+  const [contadorPedidos, setContadorPedidos] = useState(0);
   
   // Estados para imágenes
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -57,6 +59,8 @@ export default function AjustesPage() {
         setPedidoMinimo(data.pedidoMinimo ? data.pedidoMinimo.toString() : '');
         setTiempoEntrega(data.tiempoEntrega || '');
         setEnvioGratis(data.envioGratis || false);
+        setPrefijoPedidos(data.prefijoPedidos || '');
+        setContadorPedidos(data.contadorPedidos || 0);
       } else {
         setError(data.error || 'Error al cargar los ajustes');
       }
@@ -143,7 +147,8 @@ export default function AjustesPage() {
           portadaUrl: finalPortadaUrl,
           pedidoMinimo: pedidoMinimo ? Number(pedidoMinimo) : null,
           tiempoEntrega: tiempoEntrega || null,
-          envioGratis
+          envioGratis,
+          prefijoPedidos: prefijoPedidos || null
         })
       });
       
@@ -328,6 +333,46 @@ export default function AjustesPage() {
               <label htmlFor="envioGratis" className="font-medium text-slate-700 cursor-pointer">
                 Ofrecer Envío Gratis por defecto
               </label>
+            </div>
+            
+            {/* SECCIÓN DE PREFIJO DE PEDIDOS */}
+            <div className="space-y-2 pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-2">
+                <label className="block font-medium text-slate-700">Prefijo de Numeración de Pedidos</label>
+                <div className="group relative">
+                  <span className="text-yellow-500 cursor-help">⚠️</span>
+                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-2 bg-slate-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                    Solo puedes cambiar el prefijo cada 1000 pedidos para mantener la consistencia en tu contabilidad.
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-slate-500 mb-2">Asigna letras o siglas para tus pedidos.</p>
+              
+              <div className="flex gap-4 items-center">
+                <div className="relative w-48">
+                  <input
+                    type="text"
+                    value={prefijoPedidos}
+                    onChange={e => setPrefijoPedidos(e.target.value.toUpperCase())}
+                    placeholder="Ej. SUP"
+                    maxLength={5}
+                    disabled={contadorPedidos > 0 && contadorPedidos % 1000 !== 0}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none disabled:bg-slate-100 disabled:text-slate-400 uppercase font-bold"
+                  />
+                </div>
+                <div className="flex-1 bg-blue-50/50 p-3 rounded-xl border border-blue-100 flex items-center gap-2">
+                  <span className="text-blue-500">💡</span>
+                  <span className="text-sm text-blue-800 font-medium">
+                    Ejemplo: <strong className="text-lg">#{prefijoPedidos || (nombre ? nombre.substring(0,3).toUpperCase() : 'XXX')}-{(contadorPedidos > 0 ? contadorPedidos : 1).toString().padStart(4, '0')}</strong>
+                  </span>
+                </div>
+              </div>
+              
+              {contadorPedidos > 0 && contadorPedidos % 1000 !== 0 && (
+                <p className="text-xs text-red-500 font-medium mt-1">
+                  🔒 Bloqueado. Actualmente vas en el pedido {contadorPedidos}. Podrás cambiarlo cuando llegues al {Math.ceil(contadorPedidos / 1000) * 1000}.
+                </p>
+              )}
             </div>
           </div>
 

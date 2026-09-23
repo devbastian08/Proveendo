@@ -298,7 +298,7 @@ export default function PedidosPage() {
               <tbody className="divide-y divide-slate-100">
                 {pedidosFiltrados.map((pedido) => (
                   <tr key={pedido.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-900">#{pedido.id.toString().padStart(4, '0')}</td>
+                    <td className="px-6 py-4 font-bold text-slate-900">#{pedido.codigo || pedido.id.toString().padStart(4, '0')}</td>
                     <td className="px-6 py-4 text-slate-600 text-sm">
                       {new Date(pedido.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     </td>
@@ -400,7 +400,7 @@ export default function PedidosPage() {
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div>
                 <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  Pedido #{selectedPedido.id.toString().padStart(4, '0')}
+                  Pedido #{selectedPedido.codigo || selectedPedido.id.toString().padStart(4, '0')}
                 </h2>
                 <div className="mt-1">{getStatusBadge(selectedPedido.estado)}</div>
               </div>
@@ -609,7 +609,7 @@ export default function PedidosPage() {
           
           <div className="border border-black py-2 mx-4 bg-gray-100">
             <p className="text-xs uppercase tracking-widest">Pedido No.</p>
-            <p className="text-4xl font-black">{selectedPedido.id.toString().padStart(4, '0')}</p>
+            <p className="text-4xl font-black">#{selectedPedido.codigo || selectedPedido.id.toString().padStart(4, '0')}</p>
           </div>
           <p className="mt-3 text-sm">{new Date(selectedPedido.fecha).toLocaleString('es-CO')}</p>
         </div>

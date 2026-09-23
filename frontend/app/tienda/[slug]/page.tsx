@@ -143,7 +143,7 @@ export default function TiendaPage() {
       // Limpiar carrito e informar éxito
       clearCart();
       setIsCartOpen(false);
-      setOrderSuccessId(data.id.toString().padStart(4, '0'));
+      setOrderSuccessId(data.codigo || data.id.toString().padStart(4, '0'));
       
     } catch (err: any) {
       setAlertModal({ title: 'Error al procesar', message: err.message, isError: true });

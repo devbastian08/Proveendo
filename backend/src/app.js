@@ -553,7 +553,7 @@ app.get('/api/distribuidora', authMiddleware, async (req, res) => {
 });
 
 app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
-  const { nombre, slug, telefono, descripcion, latitud, longitud, pedidoMinimo, tiempoEntrega, envioGratis, logoUrl, portadaUrl } = req.body;
+  const { nombre, slug, telefono, descripcion, latitud, longitud, pedidoMinimo, tiempoEntrega, envioGratis, logoUrl, portadaUrl, prefijoPedidos } = req.body;
   
   const distribuidora = await getMyDistribuidora(req.user.id);
   if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
@@ -583,6 +583,7 @@ app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
         pedidoMinimo: pedidoMinimo !== undefined ? pedidoMinimo : distribuidora.pedidoMinimo,
         tiempoEntrega: tiempoEntrega !== undefined ? tiempoEntrega : distribuidora.tiempoEntrega,
         envioGratis: envioGratis !== undefined ? envioGratis : distribuidora.envioGratis,
+        prefijoPedidos: prefijoPedidos !== undefined ? prefijoPedidos : distribuidora.prefijoPedidos,
         logoUrl: logoUrl !== undefined ? logoUrl : distribuidora.logoUrl,
         portadaUrl: portadaUrl !== undefined ? portadaUrl : distribuidora.portadaUrl
       }
@@ -901,6 +902,16 @@ app.post('/api/pedidos', async (req, res) => {
       });
     }
 
+    // 1. Incrementar el contador de la distribuidora
+    const distActualizada = await prisma.distribuidora.update({
+      where: { id: distribuidoraId },
+      data: { contadorPedidos: { increment: 1 } }
+    });
+
+    // 2. Generar el prefijo y el código
+    const prefijo = distActualizada.prefijoPedidos || distActualizada.nombre.substring(0, 3).toUpperCase();
+    const codigoPedido = `${prefijo}-${distActualizada.contadorPedidos.toString().padStart(4, '0')}`;
+
     const pedidoData = {
       distribuidoraId,
       tenderoId: tendero.id,
@@ -911,6 +922,7 @@ app.post('/api/pedidos', async (req, res) => {
       direccionEnvio,
       latitud,
       longitud,
+      codigo: codigoPedido,
       detalles: { create: detalles },
       entrega: { create: { estado: 'en_preparacion' } }
     };
@@ -927,13 +939,13 @@ app.post('/api/pedidos', async (req, res) => {
 
     // Notificar al cliente
     if (telefonoCliente) {
-      const msgCliente = `¡Hola ${nombreCliente}! Hemos recibido tu pedido #${pedido.id.toString().padStart(4, '0')} por un total de $${total.toLocaleString()}. Te notificaremos cuando haya cambios.`;
+      const msgCliente = `¡Hola ${nombreCliente}! Hemos recibido tu pedido #${pedido.codigo} por un total de $${total.toLocaleString()}. Te notificaremos cuando haya cambios.`;
       sendWhatsAppMessage(telefonoCliente, msgCliente);
     }
 
     // Notificar a la distribuidora (administrador)
     if (distribuidora && distribuidora.telefono) {
-      const msgAdmin = `NUEVO PEDIDO #${pedido.id.toString().padStart(4, '0')} 🛒\n\nCliente: ${nombreCliente}\nTeléfono: ${telefonoCliente}\nDirección: ${direccionEnvio}\nTotal: $${total.toLocaleString()}\n\nRevisa el panel de administrador para ver el detalle de los productos.`;
+      const msgAdmin = `NUEVO PEDIDO #${pedido.codigo} 🛒\n\nCliente: ${nombreCliente}\nTeléfono: ${telefonoCliente}\nDirección: ${direccionEnvio}\nTotal: $${total.toLocaleString()}\n\nRevisa el panel de administrador para ver el detalle de los productos.`;
       sendWhatsAppMessage(distribuidora.telefono, msgAdmin);
     }
 
