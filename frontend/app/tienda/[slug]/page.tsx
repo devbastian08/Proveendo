@@ -44,18 +44,37 @@ export default function TiendaPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccessId, setOrderSuccessId] = useState<string | null>(null);
 
-  // GPS local state (No guardado en localStorage para obligar a capturarlo siempre)
+  // GPS local state (Guardado en localStorage)
   const [gpsLocation, setGpsLocation] = useState({
     latitud: null as number | null,
     longitud: null as number | null
   });
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [policyAccepted, setPolicyAccepted] = useState(false);
   const [alertModal, setAlertModal] = useState<{title: string, message: string, isError: boolean} | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
 
   useEffect(() => {
+    // Verificar ubicación en caché
+    const cachedLocation = localStorage.getItem('proveendo_user_location');
+    if (cachedLocation) {
+      try {
+        const parsed = JSON.parse(cachedLocation);
+        if (parsed.latitud && parsed.longitud) {
+          setGpsLocation({ latitud: parsed.latitud, longitud: parsed.longitud });
+        } else {
+          setShowWelcomeModal(true);
+        }
+      } catch (e) {
+        setShowWelcomeModal(true);
+      }
+    } else {
+      setShowWelcomeModal(true);
+    }
+
     const fetchStore = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/tienda/${slug}`);
@@ -94,8 +113,8 @@ export default function TiendaPage() {
     if (!gpsLocation.latitud || !gpsLocation.longitud) {
       setAlertModal({
         title: 'Ubicación Requerida',
-        message: "Para garantizar que tu pedido llegue rápido y sin contratiempos a tu negocio, por favor toca el botón '📍 Compartir ubicación exacta' antes de enviar el pedido. Esto ayuda al conductor a encontrarte fácilmente.",
-        isError: false
+        message: "No pudimos detectar tu ubicación. Por favor, asegúrate de haber dado permisos de ubicación a tu navegador y recarga la página para continuar.",
+        isError: true
       });
       return;
     }
@@ -519,40 +538,6 @@ export default function TiendaPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1">Dirección de Entrega</label>
-                        <div className="flex gap-2 mb-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!navigator.geolocation) {
-                                setAlertModal({ title: 'Navegador no compatible', message: 'Tu navegador no soporta geolocalización. Intenta desde tu celular.', isError: true });
-                                return;
-                              }
-                              setGpsLoading(true);
-                              navigator.geolocation.getCurrentPosition(
-                                (position) => {
-                                  setGpsLocation({
-                                    latitud: position.coords.latitude,
-                                    longitud: position.coords.longitude
-                                  });
-                                  setGpsLoading(false);
-                                },
-                                (error) => {
-                                  setAlertModal({ title: 'No pudimos obtener tu ubicación', message: 'Asegúrate de dar permisos de ubicación al navegador o intenta desde tu celular.', isError: true });
-                                  setGpsLoading(false);
-                                },
-                                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                              );
-                            }}
-                            className={`flex-1 py-3 font-bold rounded-xl border flex items-center justify-center gap-2 transition-colors ${
-                              gpsLocation.latitud 
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                                : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 shadow-sm animate-pulse'
-                            }`}
-                          >
-                            {gpsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-                            {gpsLocation.latitud ? '📍 Ubicación exacta confirmada' : '📍 Compartir ubicación exacta (Requerido para entrega rápida)'}
-                          </button>
-                        </div>
                         <textarea 
                           required 
                           value={checkoutForm.direccionEnvio}
@@ -623,6 +608,67 @@ export default function TiendaPage() {
               className={`w-full py-3 rounded-xl font-bold text-sm transition-colors ${alertModal.isError ? 'bg-red-50 hover:bg-red-100 text-red-600' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'}`}
             >
               Entendido
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Modal de Bienvenida y Políticas de Ubicación */}
+      {showWelcomeModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-md rounded-3xl p-8 flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mb-6 mx-auto shadow-inner">
+              <MapPin className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-4 text-center">Políticas de Entrega</h2>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6 text-sm text-slate-600 leading-relaxed">
+              <p className="mb-3">
+                Para garantizar que tus pedidos lleguen rápidamente y sin contratiempos, requerimos confirmar tu ubicación exacta.
+              </p>
+              <p className="font-bold text-slate-800">
+                ⚠️ Es estrictamente necesario que realices este paso estando físicamente en el lugar donde deseas recibir los pedidos.
+              </p>
+            </div>
+            
+            <label className="flex items-start gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors mb-6">
+              <div className="pt-0.5">
+                <input 
+                  type="checkbox" 
+                  checked={policyAccepted}
+                  onChange={(e) => setPolicyAccepted(e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-300 text-[#4a6c6f] focus:ring-2 focus:ring-[#4a6c6f] accent-[#4a6c6f]"
+                />
+              </div>
+              <span className="text-sm font-medium text-slate-700 leading-tight">
+                Declaro y certifico que me encuentro actualmente en el lugar de entrega del pedido.
+              </span>
+            </label>
+
+            <button
+              disabled={!policyAccepted || gpsLoading}
+              onClick={() => {
+                if (!navigator.geolocation) {
+                  setAlertModal({ title: 'Navegador no compatible', message: 'Tu navegador no soporta geolocalización. Intenta desde tu celular.', isError: true });
+                  return;
+                }
+                setGpsLoading(true);
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    const loc = { latitud: position.coords.latitude, longitud: position.coords.longitude };
+                    setGpsLocation(loc);
+                    localStorage.setItem('proveendo_user_location', JSON.stringify(loc));
+                    setGpsLoading(false);
+                    setShowWelcomeModal(false);
+                  },
+                  (error) => {
+                    setAlertModal({ title: 'Permiso Denegado', message: 'Debes permitir el acceso a la ubicación en tu navegador para poder continuar.', isError: true });
+                    setGpsLoading(false);
+                  },
+                  { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+              }}
+              className="w-full py-4 bg-[#4a6c6f] hover:bg-[#3a5658] disabled:opacity-50 disabled:bg-slate-300 text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-[#4a6c6f]/30"
+            >
+              {gpsLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Aceptar y Entrar a la Tienda'}
             </button>
           </div>
         </div>

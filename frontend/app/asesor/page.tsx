@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Loader2, ShoppingCart, Plus, Minus, Store, Phone, MapPin, CheckCircle, Trash2, AlertCircle } from 'lucide-react';
-import { useCartStore, Producto } from '@/store/cartStore';
+import { useAsesorCartStore, Producto } from '@/store/cartStore';
 
 interface Distribuidora {
   id: number;
@@ -16,15 +16,16 @@ export default function AsesorPage() {
   const [error, setError] = useState('');
 
   const [isClient, setIsClient] = useState(false);
-  const cart = useCartStore(state => state.cart);
-  const isCartOpen = useCartStore(state => state.isCartOpen);
-  const setIsCartOpen = useCartStore(state => state.setIsCartOpen);
-  const addToCart = useCartStore(state => state.addToCart);
-  const removeFromCart = useCartStore(state => state.removeFromCart);
-  const updateQuantity = useCartStore(state => state.updateQuantity);
-  const clearCart = useCartStore(state => state.clearCart);
-  const totalCart = useCartStore(state => state.totalCart());
-  const itemsCount = useCartStore(state => state.itemsCount());
+  // Usar el store exclusivo del asesor
+  const cart = useAsesorCartStore(state => state.cart);
+  const isCartOpen = useAsesorCartStore(state => state.isCartOpen);
+  const setIsCartOpen = useAsesorCartStore(state => state.setIsCartOpen);
+  const addToCart = useAsesorCartStore(state => state.addToCart);
+  const removeFromCart = useAsesorCartStore(state => state.removeFromCart);
+  const updateQuantity = useAsesorCartStore(state => state.updateQuantity);
+  const clearCart = useAsesorCartStore(state => state.clearCart);
+  const totalCart = useAsesorCartStore(state => state.totalCart());
+  const itemsCount = useAsesorCartStore(state => state.itemsCount());
 
   // Formulario de checkout (Datos del cliente que dicta)
   const [nombreCliente, setNombreCliente] = useState('');
