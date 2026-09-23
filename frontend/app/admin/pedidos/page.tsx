@@ -23,6 +23,7 @@ interface Usuario {
 
 interface Pedido {
   id: number;
+  codigo?: string | null;
   tenderoId: number | null;
   nombreCliente: string | null;
   telefonoCliente: string | null;
