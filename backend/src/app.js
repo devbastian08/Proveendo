@@ -908,9 +908,9 @@ app.post('/api/pedidos', async (req, res) => {
       data: { contadorPedidos: { increment: 1 } }
     });
 
-    // 2. Generar el número secuencial limpio (Opción 3: Doble Identidad)
-    // Arrancamos desde 1000 por estética B2B (el primer pedido será el 1001)
-    const codigoPedido = (1000 + distActualizada.contadorPedidos).toString();
+    // 2. Generar el número secuencial limpio (Opción 3)
+    // Rellenamos con ceros a la izquierda para que empiece en "0001"
+    const codigoPedido = distActualizada.contadorPedidos.toString().padStart(4, '0');
 
     const pedidoData = {
       distribuidoraId,
