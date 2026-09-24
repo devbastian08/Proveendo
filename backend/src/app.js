@@ -553,7 +553,7 @@ app.get('/api/distribuidora', authMiddleware, async (req, res) => {
 });
 
 app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
-  const { nombre, slug, telefono, descripcion, latitud, longitud, pedidoMinimo, tiempoEntrega, envioGratis, logoUrl, portadaUrl, prefijoPedidos } = req.body;
+  const { nombre, slug, telefono, descripcion, latitud, longitud, pedidoMinimo, tiempoEntrega, envioGratis, logoUrl, portadaUrl } = req.body;
   
   const distribuidora = await getMyDistribuidora(req.user.id);
   if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
@@ -583,10 +583,10 @@ app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
         pedidoMinimo: pedidoMinimo !== undefined ? pedidoMinimo : distribuidora.pedidoMinimo,
         tiempoEntrega: tiempoEntrega !== undefined ? tiempoEntrega : distribuidora.tiempoEntrega,
         envioGratis: envioGratis !== undefined ? envioGratis : distribuidora.envioGratis,
-        prefijoPedidos: prefijoPedidos !== undefined ? prefijoPedidos : distribuidora.prefijoPedidos,
         logoUrl: logoUrl !== undefined ? logoUrl : distribuidora.logoUrl,
         portadaUrl: portadaUrl !== undefined ? portadaUrl : distribuidora.portadaUrl
       }
+    });
     return res.json(updated);
   } catch (error) {
     console.error("Error detallado al actualizar distribuidora:", error);
@@ -908,9 +908,9 @@ app.post('/api/pedidos', async (req, res) => {
       data: { contadorPedidos: { increment: 1 } }
     });
 
-    // 2. Generar el prefijo y el código
-    const prefijo = distActualizada.prefijoPedidos || distActualizada.nombre.substring(0, 3).toUpperCase();
-    const codigoPedido = `${prefijo}-${distActualizada.contadorPedidos.toString().padStart(4, '0')}`;
+    // 2. Generar el número secuencial limpio (Opción 3: Doble Identidad)
+    // Arrancamos desde 1000 por estética B2B (el primer pedido será el 1001)
+    const codigoPedido = (1000 + distActualizada.contadorPedidos).toString();
 
     const pedidoData = {
       distribuidoraId,
