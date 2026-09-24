@@ -92,7 +92,7 @@ model Pedido {
   total           Float
   fecha           DateTime        @default(now())
   motivoReactivacion String?      // Para guardar el motivo cuando un pedido entregado es devuelto a pendiente
-  codigo          String?         @unique // Código personalizado del pedido (ej. ST-0001)
+  codigo          String?         // Código personalizado del pedido (ej. ST-0001)
   
   distribuidora   Distribuidora   @relation(fields: [distribuidoraId], references: [id])
   tendero         Tendero?        @relation(fields: [tenderoId], references: [id])
