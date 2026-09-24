@@ -587,10 +587,10 @@ app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
         logoUrl: logoUrl !== undefined ? logoUrl : distribuidora.logoUrl,
         portadaUrl: portadaUrl !== undefined ? portadaUrl : distribuidora.portadaUrl
       }
-    });
     return res.json(updated);
   } catch (error) {
-    return res.status(500).json({ error: 'Error al actualizar distribuidora' });
+    console.error("Error detallado al actualizar distribuidora:", error);
+    return res.status(500).json({ error: 'Error al actualizar distribuidora: ' + (error.message || 'Desconocido') });
   }
 });
 
