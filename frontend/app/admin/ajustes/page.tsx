@@ -331,7 +331,6 @@ export default function AjustesPage() {
                 Ofrecer Envío Gratis por defecto
               </label>
             </div>
-            </div>
           </div>
 
           {/* SECCIÓN DE CONTACTO Y ENLACE */}
