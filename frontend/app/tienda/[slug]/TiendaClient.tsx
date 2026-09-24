@@ -593,18 +593,50 @@ export default function TiendaClient({
                   return;
                 }
                 setGpsLoading(true);
+
+                const handlePositionSuccess = (position: GeolocationPosition) => {
+                  const loc = { latitud: position.coords.latitude, longitud: position.coords.longitude };
+                  setGpsLocation(loc);
+                  localStorage.setItem('proveendo_user_location', JSON.stringify(loc));
+                  setGpsLoading(false);
+                  setShowWelcomeModal(false);
+                };
+
+                const handlePositionError = (error: GeolocationPositionError, wasHighAccuracy: boolean) => {
+                  if (wasHighAccuracy && (error.code === error.TIMEOUT || error.code === error.POSITION_UNAVAILABLE)) {
+                    // Intento de fallback sin alta precisión (ideal para PCs de escritorio)
+                    navigator.geolocation.getCurrentPosition(
+                      handlePositionSuccess,
+                      (fallbackError) => showErrorModal(fallbackError),
+                      { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+                    );
+                  } else {
+                    showErrorModal(error);
+                  }
+                };
+
+                const showErrorModal = (error: GeolocationPositionError) => {
+                  setGpsLoading(false);
+                  let errorMsg = 'No pudimos obtener tu ubicación.';
+                  if (error.code === error.PERMISSION_DENIED) {
+                    errorMsg = 'Debes permitir el acceso a la ubicación en tu navegador para poder continuar.';
+                  } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    errorMsg = 'La información de ubicación no está disponible (frecuente en PCs de escritorio o redes sin WiFi).';
+                  } else if (error.code === error.TIMEOUT) {
+                    errorMsg = 'La petición de ubicación tardó demasiado. Intenta nuevamente.';
+                  }
+                  
+                  setAlertModal({ 
+                    title: error.code === error.PERMISSION_DENIED ? 'Permiso Denegado' : 'Error de Ubicación', 
+                    message: errorMsg, 
+                    isError: true 
+                  });
+                };
+
+                // Primer intento con alta precisión
                 navigator.geolocation.getCurrentPosition(
-                  (position) => {
-                    const loc = { latitud: position.coords.latitude, longitud: position.coords.longitude };
-                    setGpsLocation(loc);
-                    localStorage.setItem('proveendo_user_location', JSON.stringify(loc));
-                    setGpsLoading(false);
-                    setShowWelcomeModal(false);
-                  },
-                  (error) => {
-                    setAlertModal({ title: 'Permiso Denegado', message: 'Debes permitir el acceso a la ubicación en tu navegador para poder continuar.', isError: true });
-                    setGpsLoading(false);
-                  },
+                  handlePositionSuccess,
+                  (error) => handlePositionError(error, true),
                   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
               }}
