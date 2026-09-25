@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 
 const LeafletMap = dynamic(() => import('./MapComponent'), {
   ssr: false,
-  loading: () => <div className="w-full h-80 bg-slate-100 animate-pulse rounded-2xl flex items-center justify-center text-slate-400 font-medium">Cargando mapa interactivo...</div>
+  loading: () => <div className="w-full h-80 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-2xl flex items-center justify-center text-slate-400 font-medium">Cargando mapa interactivo...</div>
 });
 interface Entrega {
   id: number;
@@ -205,7 +205,7 @@ export default function ConductorPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+      <div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
         <Loader2 className="w-10 h-10 animate-spin text-[#4a6c6f] mb-4" />
         <p className="font-medium text-lg">Cargando tu ruta...</p>
       </div>
@@ -217,14 +217,14 @@ export default function ConductorPage() {
       {/* Custom Modal */}
       {modal && modal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-xl p-6 w-full max-w-sm animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">{modal.title}</h3>
-            <p className="text-slate-600 mb-6">{modal.message}</p>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-6 w-full max-w-sm animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{modal.title}</h3>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">{modal.message}</p>
             <div className="flex gap-3">
               {modal.type === 'confirm' && (
                 <button 
                   onClick={() => setModal(null)}
-                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+                  className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
@@ -244,14 +244,14 @@ export default function ConductorPage() {
       )}
 
       {/* Saludo */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
             <PackageOpen className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-900">Ruta de Hoy</h2>
-            <p className="text-slate-500 font-medium">{entregas.length} entregas pendientes</p>
+            <h2 className="text-xl font-black text-slate-900 dark:text-white">Ruta de Hoy</h2>
+            <p className="text-slate-500 dark:text-slate-400 font-medium">{entregas.length} entregas pendientes</p>
           </div>
         </div>
         <div>
@@ -261,7 +261,7 @@ export default function ConductorPage() {
               En Ruta
             </span>
           ) : (
-            <span className="bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full text-xs font-bold uppercase">
+            <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-3 py-1.5 rounded-full text-xs font-bold uppercase">
               En Bodega
             </span>
           )}
@@ -270,9 +270,9 @@ export default function ConductorPage() {
 
       {/* Mapa Visual Mapbox */}
       {entregas.length > 0 && (
-        <div className="bg-white p-3 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-3 relative">
+        <div className="bg-white dark:bg-slate-900 p-3 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-3 relative">
            {/* Contenedor del Mapa Leaflet */}
-           <div className="w-full h-80 rounded-2xl shadow-inner border border-slate-100 overflow-hidden relative z-0">
+           <div className="w-full h-80 rounded-2xl shadow-inner border border-slate-100 dark:border-slate-800 overflow-hidden relative z-0">
               <LeafletMap entregas={entregas} origen={origen} rutaGeometry={rutaGeometry} />
            </div>
         </div>
@@ -310,34 +310,34 @@ export default function ConductorPage() {
       )}
 
       {entregas.length === 0 ? (
-        <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 text-center flex flex-col items-center">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-slate-800 text-center flex flex-col items-center">
           <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
             <CheckCircle2 className="w-10 h-10" />
           </div>
-          <h3 className="text-xl font-bold text-slate-900 mb-2">¡Todo al día!</h3>
-          <p className="text-slate-500">No tienes más pedidos asignados para entregar en este momento.</p>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">¡Todo al día!</h3>
+          <p className="text-slate-500 dark:text-slate-400">No tienes más pedidos asignados para entregar en este momento.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {entregas.map((entrega, index) => (
-            <div key={entrega.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex flex-col gap-3">
+            <div key={entrega.id} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-4 flex flex-col gap-3">
               <div className="flex justify-between items-start">
                 <div className="flex gap-3">
                   <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-black shrink-0 text-lg">
                     {index + 1}
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900 leading-tight">
+                    <h3 className="font-bold text-slate-900 dark:text-white leading-tight">
                       {entrega.pedido.nombreCliente}
                     </h3>
-                    <p className="text-slate-500 text-xs flex items-start gap-1 mt-1 pr-2">
+                    <p className="text-slate-500 dark:text-slate-400 text-xs flex items-start gap-1 mt-1 pr-2">
                       <MapPin className="w-3 h-3 text-[#4a6c6f] mt-0.5 shrink-0" />
                       <span className="line-clamp-2">{entrega.pedido.direccionEnvio}</span>
                     </p>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                   <span className="text-sm font-black text-slate-900 block">
+                   <span className="text-sm font-black text-slate-900 dark:text-white block">
                      ${entrega.pedido.total.toLocaleString()}
                    </span>
                    <span className="text-xs text-slate-400 font-medium">{entrega.pedido.detalles.length} cajas</span>
@@ -348,7 +348,7 @@ export default function ConductorPage() {
               <div className="flex gap-2 mt-1">
                 <a 
                   href={`tel:${entrega.pedido.telefonoCliente}`}
-                  className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-bold transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 py-2.5 rounded-xl text-sm font-bold transition-colors"
                 >
                   <PhoneCall className="w-4 h-4" /> Llamar
                 </a>

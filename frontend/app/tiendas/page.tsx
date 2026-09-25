@@ -21,7 +21,7 @@ interface DirectorioTienda {
 
 const StoreCard = ({ tienda }: { tienda: DirectorioTienda }) => (
   <Link href={`/tienda/${tienda.slug}`} key={tienda.id}>
-    <div className="group bg-white rounded-3xl shadow-sm hover:shadow-xl border border-slate-100 hover:border-[#56cbf9] transition-all duration-300 overflow-hidden cursor-pointer h-full flex flex-col relative">
+    <div className="group bg-white dark:bg-slate-900 rounded-3xl shadow-sm hover:shadow-xl border border-slate-100 dark:border-slate-800 hover:border-[#56cbf9] transition-all duration-300 overflow-hidden cursor-pointer h-full flex flex-col relative">
       
       {/* Foto de Portada */}
       <div className="h-32 w-full bg-slate-200 relative overflow-hidden">
@@ -38,8 +38,8 @@ const StoreCard = ({ tienda }: { tienda: DirectorioTienda }) => (
       
       {/* Foto de Perfil (Logo) */}
       <div className="absolute top-20 left-6">
-        <div className="w-20 h-20 bg-white rounded-full p-1 shadow-md border border-slate-100">
-          <div className="w-full h-full bg-slate-50 rounded-full flex items-center justify-center overflow-hidden">
+        <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-full p-1 shadow-md border border-slate-100 dark:border-slate-800">
+          <div className="w-full h-full bg-slate-50 dark:bg-slate-950 rounded-full flex items-center justify-center overflow-hidden">
             {tienda.logoUrl ? (
               <img 
                 src={tienda.logoUrl} 
@@ -56,11 +56,11 @@ const StoreCard = ({ tienda }: { tienda: DirectorioTienda }) => (
       </div>
       
       {/* Card Body */}
-      <div className="pt-12 pb-6 px-6 flex-1 flex flex-col bg-white">
-        <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-[#4a6c6f] transition-colors">
+      <div className="pt-12 pb-6 px-6 flex-1 flex flex-col bg-white dark:bg-slate-900">
+        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-[#4a6c6f] transition-colors">
           {tienda.nombre}
         </h3>
-        <p className="text-slate-500 text-sm mb-4 line-clamp-2 flex-1">
+        <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 line-clamp-2 flex-1">
           {tienda.descripcion || 'Distribuidora mayorista de productos de consumo masivo.'}
         </p>
         
@@ -93,7 +93,7 @@ const StoreCard = ({ tienda }: { tienda: DirectorioTienda }) => (
           )}
         </div>
 
-        <div className="w-full py-2.5 text-center bg-slate-50 group-hover:bg-[#4a6c6f] group-hover:text-white text-[#4a6c6f] rounded-xl font-medium transition-all duration-300">
+        <div className="w-full py-2.5 text-center bg-slate-50 dark:bg-slate-950 group-hover:bg-[#4a6c6f] group-hover:text-white text-[#4a6c6f] rounded-xl font-medium transition-all duration-300">
           Visitar Tienda
         </div>
       </div>
@@ -145,15 +145,15 @@ export default function TiendasDirectorioPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header Público */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <header className="bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.svg" alt="ProvEEndo" className="h-12 w-auto" />
             <span className="font-bold text-2xl tracking-tight text-[#4a6c6f]">ProvEEndo</span>
           </div>
-          <Link href="/login" className="text-sm font-medium text-slate-500 hover:text-[#4a6c6f] transition-colors">
+          <Link href="/login" className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-[#4a6c6f] transition-colors">
             ¿Eres Distribuidor?
           </Link>
         </div>
@@ -161,10 +161,10 @@ export default function TiendasDirectorioPage() {
 
       <main className="max-w-5xl mx-auto px-4 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight">
             Nuestras Distribuidoras Aliadas
           </h1>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
             Encuentra los mejores precios, surte tu negocio y recibe todo directamente de distribuidores de confianza.
           </p>
         </div>
@@ -182,12 +182,12 @@ export default function TiendasDirectorioPage() {
                 router.push(`/tienda/${filteredTiendas[0].slug}`);
               }
             }}
-            className="w-full pl-12 pr-12 py-3 rounded-2xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-[#56cbf9] focus:border-transparent outline-none transition-all"
+            className="w-full pl-12 pr-12 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm focus:ring-2 focus:ring-[#56cbf9] focus:border-transparent outline-none transition-all"
           />
           {searchQuery && (
             <button 
               onClick={() => setSearchQuery('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full p-1.5 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-full p-1.5 transition-colors"
               title="Borrar búsqueda"
             >
               <X className="w-4 h-4" />
@@ -199,7 +199,7 @@ export default function TiendasDirectorioPage() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-white rounded-3xl border border-slate-100 overflow-hidden h-96 flex flex-col relative animate-pulse">
+              <div key={i} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden h-96 flex flex-col relative animate-pulse">
                 <div className="h-32 w-full bg-slate-200" />
                 <div className="absolute top-20 left-6">
                   <div className="w-20 h-20 bg-slate-200 rounded-full border-4 border-white" />
@@ -218,17 +218,17 @@ export default function TiendasDirectorioPage() {
             ))}
           </div>
         ) : tiendas.length === 0 ? (
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-16 text-center">
-            <div className="w-20 h-20 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-16 text-center">
+            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
               <Store className="w-10 h-10" />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">Aún no hay tiendas disponibles</h3>
-            <p className="text-slate-500">Pronto se unirán nuevas distribuidoras a la plataforma.</p>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Aún no hay tiendas disponibles</h3>
+            <p className="text-slate-500 dark:text-slate-400">Pronto se unirán nuevas distribuidoras a la plataforma.</p>
           </div>
         ) : filteredTiendas.length === 0 ? (
           <div className="text-center py-20">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">No encontramos resultados</h3>
-            <p className="text-slate-500">Intenta buscar con otras palabras.</p>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No encontramos resultados</h3>
+            <p className="text-slate-500 dark:text-slate-400">Intenta buscar con otras palabras.</p>
           </div>
         ) : (
           <>
@@ -249,7 +249,7 @@ export default function TiendasDirectorioPage() {
 
             {/* Todas las tiendas */}
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-6">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">
                 {searchQuery !== '' ? 'Resultados de Búsqueda' : 'Todas las Distribuidoras'}
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

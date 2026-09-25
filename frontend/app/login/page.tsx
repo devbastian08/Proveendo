@@ -55,8 +55,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden">
         <div className="p-8 space-y-8">
           <div className="text-center space-y-2">
             <div className="flex justify-center mb-6">
@@ -68,30 +68,30 @@ export default function LoginPage() {
                 className="text-[#4a6c6f] object-contain"
               />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Bienvenido de nuevo</h1>
-            <p className="text-slate-500">Ingresa a tu cuenta de ProvEEndo</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Bienvenido de nuevo</h1>
+            <p className="text-slate-500 dark:text-slate-400">Ingresa a tu cuenta de ProvEEndo</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Correo Electrónico</label>
                 <input
                   type="email"
                   value={correo}
                   onChange={(e) => setCorreo(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[#56cbf9] focus:border-[#56cbf9] outline-none transition-all text-slate-900 bg-white"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-[#56cbf9] focus:border-[#56cbf9] outline-none transition-all text-slate-900 dark:text-white bg-white dark:bg-slate-900"
                   placeholder="ejemplo@proveendo.com"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Contraseña</label>
                 <input
                   type="password"
                   value={contrasena}
                   onChange={(e) => setContrasena(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[#56cbf9] focus:border-[#56cbf9] outline-none transition-all text-slate-900 bg-white"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-[#56cbf9] focus:border-[#56cbf9] outline-none transition-all text-slate-900 dark:text-white bg-white dark:bg-slate-900"
                   placeholder="••••••••"
                   required
                 />
@@ -114,7 +114,7 @@ export default function LoginPage() {
             </button>
           </form>
         </div>
-        <div className="bg-slate-50 p-4 text-center text-sm text-slate-500 border-t border-slate-100">
+        <div className="bg-slate-50 dark:bg-slate-950 p-4 text-center text-sm text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800">
           Usa tu correo y contraseña registrados para ingresar.
         </div>
       </div>

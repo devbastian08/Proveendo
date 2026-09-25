@@ -29,7 +29,7 @@ const MapOverlayControls = () => {
               document.exitFullscreen();
             }
           }}
-          className="bg-white hover:bg-slate-50 p-2 text-slate-700 transition-colors"
+          className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-950 p-2 text-slate-700 dark:text-slate-200 transition-colors"
           title="Pantalla Completa"
         >
           <Maximize className="w-5 h-5" />

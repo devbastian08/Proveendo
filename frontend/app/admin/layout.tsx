@@ -81,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const visibleMenuItems = menuItems.filter(item => item.roles.includes(user.rol));
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">
       {/* Overlay para móviles */}
       {isSidebarOpen && (
         <div 
@@ -92,7 +92,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Menú Lateral (Sidebar) */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 print:hidden
+        fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 transform transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 print:hidden
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="h-full flex flex-col">
@@ -100,9 +100,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="p-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Image src="/logo.svg" alt="ProvEEndo" width={40} height={40} className="text-[#4a6c6f] object-contain" />
-              <span className="font-bold text-xl text-slate-900">ProvEEndo</span>
+              <span className="font-bold text-xl text-slate-900 dark:text-white">ProvEEndo</span>
             </div>
-            <button className="lg:hidden text-slate-500" onClick={() => setSidebarOpen(false)}>
+            <button className="lg:hidden text-slate-500 dark:text-slate-400" onClick={() => setSidebarOpen(false)}>
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -111,7 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="px-6 pb-6">
             <div className="px-4 py-3 bg-[#e2e8ce]/40 rounded-xl border border-[#e2e8ce]">
               <p className="text-sm font-bold text-[#4a6c6f] truncate">{user.nombre}</p>
-              <p className="text-xs text-slate-500 capitalize font-medium">{user.rol}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 capitalize font-medium">{user.rol}</p>
             </div>
           </div>
 
@@ -127,7 +127,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all
                     ${isActive 
                       ? 'bg-[#4a6c6f] text-white shadow-md shadow-[#4a6c6f]/20' 
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-950 hover:text-slate-900 dark:text-white'}
                   `}
                 >
                   {item.icon}
@@ -138,7 +138,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </nav>
 
           {/* Footer del Sidebar */}
-          <div className="p-4 border-t border-slate-100">
+          <div className="p-4 border-t border-slate-100 dark:border-slate-800">
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 px-4 py-3 w-full text-left text-[#d62246] hover:bg-[#d62246]/10 rounded-xl font-medium transition-colors"
@@ -153,8 +153,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Contenido Principal */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Barra superior solo en móviles */}
-        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4 lg:hidden print:hidden">
-          <button className="text-slate-500" onClick={() => setSidebarOpen(true)}>
+        <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center gap-4 lg:hidden print:hidden">
+          <button className="text-slate-500 dark:text-slate-400" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-6 h-6" />
           </button>
           <span className="font-bold text-lg text-[#4a6c6f]">ProvEEndo</span>

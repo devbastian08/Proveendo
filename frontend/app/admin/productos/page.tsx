@@ -30,6 +30,7 @@ export default function ProductosPage() {
   const [categoria, setCategoria] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alertModal, setAlertModal] = useState<{title: string, message: string, isError: boolean} | null>(null);
 
@@ -60,7 +61,14 @@ export default function ProductosPage() {
       const file = e.target.files[0];
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
+      setRemoveImage(false);
     }
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveImage(true);
   };
 
   const uploadImageToCloudinary = async (file: File) => {
@@ -96,6 +104,7 @@ export default function ProductosPage() {
     setCategoria('');
     setImageFile(null);
     setImagePreview(null);
+    setRemoveImage(false);
     setIsModalOpen(true);
   };
 
@@ -107,6 +116,7 @@ export default function ProductosPage() {
     setCategoria(prod.categoria || '');
     setImageFile(null);
     setImagePreview(prod.imagenUrl || null);
+    setRemoveImage(false);
     setIsModalOpen(true);
   };
 
@@ -120,6 +130,8 @@ export default function ProductosPage() {
     try {
       let finalImageUrl = editingProduct?.imagenUrl || null;
       
+      if (removeImage) finalImageUrl = null;
+
       // 1. Si hay una nueva imagen seleccionada, la subimos a Cloudinary
       if (imageFile) {
         finalImageUrl = await uploadImageToCloudinary(imageFile);
@@ -187,8 +199,8 @@ export default function ProductosPage() {
     <div className="space-y-6 relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Inventario de Productos</h1>
-          <p className="text-slate-500">Gestiona los productos disponibles para los tenderos.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Inventario de Productos</h1>
+          <p className="text-slate-500 dark:text-slate-400">Gestiona los productos disponibles para los tenderos.</p>
         </div>
         <button 
           onClick={openCreateModal}
@@ -200,18 +212,18 @@ export default function ProductosPage() {
       </div>
       
       {/* Table Section */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-12 text-slate-500">
+          <div className="flex flex-col items-center justify-center p-12 text-slate-500 dark:text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-[#4a6c6f] mb-4" />
             <p>Cargando catálogo...</p>
           </div>
         ) : productos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-slate-500 text-center">
+          <div className="flex flex-col items-center justify-center p-12 text-slate-500 dark:text-slate-400 text-center">
             <div className="w-16 h-16 bg-[#e2e8ce] text-[#4a6c6f] rounded-full flex items-center justify-center mb-4">
               <PackagePlus className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1">Tu catálogo está vacío</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Tu catálogo está vacío</h3>
             <p className="max-w-sm mb-6">Empieza a agregar productos para que los tenderos puedan hacer pedidos.</p>
             <button 
               onClick={openCreateModal}
@@ -224,7 +236,7 @@ export default function ProductosPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100 text-sm text-slate-500">
+                <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400">
                   <th className="px-6 py-4 font-medium w-16">Foto</th>
                   <th className="px-6 py-4 font-medium">Nombre</th>
                   <th className="px-6 py-4 font-medium">Categoría</th>
@@ -235,22 +247,22 @@ export default function ProductosPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {productos.map((prod) => (
-                  <tr key={prod.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={prod.id} className="hover:bg-slate-50 dark:bg-slate-950/50 transition-colors">
                     <td className="px-6 py-4">
                       {prod.imagenUrl ? (
-                        <img src={prod.imagenUrl} alt={prod.nombre} className="w-10 h-10 object-cover rounded-lg border border-slate-200" />
+                        <img src={prod.imagenUrl} alt={prod.nombre} className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700" />
                       ) : (
-                        <div className="w-10 h-10 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400">
+                        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400">
                           <ImageIcon className="w-5 h-5" />
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 font-medium text-slate-900">{prod.nombre}</td>
-                    <td className="px-6 py-4 text-slate-600">
-                      <span className="px-2 py-1 bg-slate-100 rounded-md text-xs font-medium">{prod.categoria || 'General'}</span>
+                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{prod.nombre}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                      <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-md text-xs font-medium">{prod.categoria || 'General'}</span>
                     </td>
-                    <td className="px-6 py-4 text-slate-600">${prod.precio.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-slate-600">
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300">${prod.precio.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
                       <span className={`font-medium ${prod.stock < 10 ? 'text-[#d62246]' : 'text-emerald-600'}`}>
                         {prod.stock} u.
                       </span>
@@ -258,7 +270,7 @@ export default function ProductosPage() {
                     <td className="px-6 py-4 text-right flex justify-end gap-3">
                       <button 
                         onClick={() => openEditModal(prod)}
-                        className="p-2 text-[#56cbf9] hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-2 text-[#56cbf9] hover:bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors"
                         title="Editar"
                       >
                         <Pencil className="w-4 h-4" />
@@ -283,16 +295,26 @@ export default function ProductosPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl p-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
               {editingProduct ? 'Editar Producto' : 'Agregar Nuevo Producto'}
             </h2>
             
             <form onSubmit={handleSaveProduct} className="space-y-4">
               {/* Sección de Imagen */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700">Foto del Producto (Opcional)</label>
-                <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition-colors">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Foto del Producto (Opcional)</label>
+                <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 text-center hover:bg-slate-50 dark:bg-slate-950 transition-colors relative group">
+                  {imagePreview && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-600 shadow-md"
+                      title="Quitar foto"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                  )}
                   <input
                     type="file"
                     accept="image/*"
@@ -307,57 +329,57 @@ export default function ProductosPage() {
                       <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
                     )}
                     <span className="text-sm text-[#4a6c6f] font-medium">Haz clic para subir/cambiar foto</span>
-                    <span className="text-xs text-slate-500 mt-1">PNG, JPG, WEBP</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">PNG, JPG, WEBP</span>
                   </label>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Producto</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Nombre del Producto</label>
                 <input
                   type="text"
                   required
                   value={nombre}
                   onChange={e => setNombre(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
                   placeholder="Ej. Arroz Diana 5kg"
                 />
               </div>
               
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Precio base</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Precio base</label>
                   <input
                     type="number"
                     required
                     min="0"
                     value={precio}
                     onChange={e => setPrecio(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
                     placeholder="25000"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Stock disponible</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Stock disponible</label>
                   <input
                     type="number"
                     required
                     min="0"
                     value={stock}
                     onChange={e => setStock(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
                     placeholder="100"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Categoría</label>
                 <input
                   type="text"
                   value={categoria}
                   onChange={e => setCategoria(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
                   placeholder="Ej. Abarrotes"
                 />
               </div>
@@ -373,7 +395,7 @@ export default function ProductosPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg"
+                  className="px-4 py-2 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-50 dark:bg-slate-950 rounded-lg"
                 >
                   Cancelar
                 </button>
@@ -395,18 +417,18 @@ export default function ProductosPage() {
       {productToDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setProductToDelete(null)}></div>
-          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 text-center">
+          <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6 text-center">
             <div className="w-16 h-16 bg-red-100 text-[#d62246] rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">¿Eliminar producto?</h2>
-            <p className="text-slate-500 mb-6">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">¿Eliminar producto?</h2>
+            <p className="text-slate-500 dark:text-slate-400 mb-6">
               Estás a punto de eliminar <strong>{productToDelete.nombre}</strong>. Esta acción no se puede deshacer.
             </p>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => setProductToDelete(null)}
-                className="px-4 py-2 flex-1 text-slate-600 font-medium bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                className="px-4 py-2 flex-1 text-slate-600 dark:text-slate-300 font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg transition-colors"
               >
                 Cancelar
               </button>
@@ -423,14 +445,14 @@ export default function ProductosPage() {
       {/* MODAL DE ALERTAS PERSONALIZADAS */}
       {alertModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="flex items-start gap-4 mb-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${alertModal.isError ? 'bg-red-100 text-red-500' : 'bg-emerald-100 text-emerald-500'}`}>
                 <AlertCircle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-800 leading-tight mb-1">{alertModal.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{alertModal.message}</p>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight mb-1">{alertModal.title}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{alertModal.message}</p>
               </div>
             </div>
             <button

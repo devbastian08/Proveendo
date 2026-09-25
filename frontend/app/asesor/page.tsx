@@ -118,13 +118,13 @@ export default function AsesorPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tomar Pedido</h1>
-          <p className="text-slate-500 text-sm">Selecciona los productos y registra el pedido de tu cliente.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Tomar Pedido</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Selecciona los productos y registra el pedido de tu cliente.</p>
         </div>
         
         <button 
           onClick={() => setIsCartOpen(true)}
-          className="relative p-3 bg-white text-slate-600 hover:text-[#4a6c6f] shadow-sm border border-slate-200 rounded-full transition-all hover:shadow-md"
+          className="relative p-3 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-[#4a6c6f] shadow-sm border border-slate-200 dark:border-slate-700 rounded-full transition-all hover:shadow-md"
         >
           <ShoppingCart className="w-6 h-6" />
           {isClient && itemsCount > 0 && (
@@ -137,16 +137,16 @@ export default function AsesorPage() {
 
       {/* Catálogo */}
       {productos.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-sm">
-          <p className="text-slate-500 font-medium">No hay productos con stock disponible en este momento.</p>
+        <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <p className="text-slate-500 dark:text-slate-400 font-medium">No hay productos con stock disponible en este momento.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {productos.map(prod => {
             const inCart = cart.find(c => c.id === prod.id);
             return (
-              <div key={prod.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md hover:border-slate-300 transition-all">
-                <div className="aspect-square bg-slate-50 relative overflow-hidden">
+              <div key={prod.id} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col hover:shadow-md hover:border-slate-300 dark:border-slate-600 transition-all">
+                <div className="aspect-square bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
                   {prod.imagenUrl ? (
                     <img src={prod.imagenUrl} alt={prod.nombre} className="w-full h-full object-cover" />
                   ) : (
@@ -157,20 +157,20 @@ export default function AsesorPage() {
                 </div>
                 <div className="p-3 sm:p-4 flex flex-col flex-1">
                   <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#4a6c6f] mb-1">{prod.categoria || 'General'}</p>
-                  <h3 className="font-bold text-slate-900 text-sm sm:text-base leading-tight mb-2 line-clamp-2">{prod.nombre}</h3>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base leading-tight mb-2 line-clamp-2">{prod.nombre}</h3>
                   <div className="mt-auto">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1 sm:gap-0 mb-3">
                       <span className="font-black text-[#4a6c6f] text-base sm:text-lg">${prod.precio.toLocaleString()}</span>
-                      <span className="text-[10px] sm:text-xs text-slate-400 font-medium bg-slate-100 px-2 py-0.5 rounded-full w-fit">Disp: {prod.stock}</span>
+                      <span className="text-[10px] sm:text-xs text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full w-fit">Disp: {prod.stock}</span>
                     </div>
                     
                     {inCart ? (
-                      <div className="flex items-center justify-between bg-slate-50 p-1 rounded-xl border border-slate-200">
-                        <button onClick={() => updateQuantity(prod.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-slate-600 hover:text-slate-900 active:scale-95 transition-transform">
+                      <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <button onClick={() => updateQuantity(prod.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 rounded-lg shadow-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white active:scale-95 transition-transform">
                           <Minus className="w-4 h-4" />
                         </button>
-                        <span className="font-bold text-slate-900">{inCart.cantidad}</span>
-                        <button onClick={() => updateQuantity(prod.id, 1)} disabled={inCart.cantidad >= prod.stock} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-slate-600 hover:text-slate-900 disabled:opacity-50 active:scale-95 transition-transform">
+                        <span className="font-bold text-slate-900 dark:text-white">{inCart.cantidad}</span>
+                        <button onClick={() => updateQuantity(prod.id, 1)} disabled={inCart.cantidad >= prod.stock} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 rounded-lg shadow-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white disabled:opacity-50 active:scale-95 transition-transform">
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
@@ -197,16 +197,16 @@ export default function AsesorPage() {
         <div className="fixed inset-0 z-50 flex sm:justify-end flex-col sm:flex-row">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)}></div>
           
-          <div className="relative w-full sm:w-[450px] bg-white h-[90vh] sm:h-full mt-auto sm:mt-0 rounded-t-3xl sm:rounded-none flex flex-col shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-right duration-300">
+          <div className="relative w-full sm:w-[450px] bg-white dark:bg-slate-900 h-[90vh] sm:h-full mt-auto sm:mt-0 rounded-t-3xl sm:rounded-none flex flex-col shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-right duration-300">
             {/* Grabber para móvil */}
             <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-3 sm:hidden"></div>
             
-            <div className="px-6 pb-4 sm:pt-6 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <div className="px-6 pb-4 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <ShoppingCart className="w-6 h-6 text-[#4a6c6f]" />
                 Resumen del Pedido
               </h2>
-              <button onClick={() => setIsCartOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors">
+              <button onClick={() => setIsCartOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 dark:text-slate-300 rounded-full hover:bg-slate-50 dark:bg-slate-950 transition-colors">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               </button>
             </div>
@@ -214,7 +214,7 @@ export default function AsesorPage() {
             <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
               {cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4">
-                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center">
+                  <div className="w-20 h-20 bg-slate-50 dark:bg-slate-950 rounded-full flex items-center justify-center">
                     <ShoppingCart className="w-10 h-10 opacity-50" />
                   </div>
                   <p className="font-medium">El pedido está vacío</p>
@@ -222,22 +222,22 @@ export default function AsesorPage() {
               ) : (
                 <div className="space-y-4">
                   {cart.map(item => (
-                    <div key={item.id} className="flex gap-4 p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <div key={item.id} className="flex gap-4 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
                       {item.imagenUrl ? (
-                         <img src={item.imagenUrl} alt={item.nombre} className="w-20 h-20 object-cover rounded-xl bg-slate-50" />
+                         <img src={item.imagenUrl} alt={item.nombre} className="w-20 h-20 object-cover rounded-xl bg-slate-50 dark:bg-slate-950" />
                       ) : (
-                         <div className="w-20 h-20 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300"><Store className="w-8 h-8" /></div>
+                         <div className="w-20 h-20 bg-slate-50 dark:bg-slate-950 rounded-xl flex items-center justify-center text-slate-300"><Store className="w-8 h-8" /></div>
                       )}
                       
                       <div className="flex-1 flex flex-col justify-center">
-                        <h4 className="font-bold text-slate-900 text-sm leading-tight mb-1">{item.nombre}</h4>
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm leading-tight mb-1">{item.nombre}</h4>
                         <p className="font-black text-[#4a6c6f] text-sm">${item.precio.toLocaleString()}</p>
                         
                         <div className="mt-3 flex items-center justify-between">
-                          <div className="flex items-center gap-3 bg-slate-50 p-1 rounded-lg border border-slate-100">
-                            <button onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm text-slate-500 hover:text-slate-900"><Minus className="w-3 h-3" /></button>
+                          <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 p-1 rounded-lg border border-slate-100 dark:border-slate-800">
+                            <button onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 flex items-center justify-center bg-white dark:bg-slate-900 rounded-md shadow-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white"><Minus className="w-3 h-3" /></button>
                             <span className="font-bold text-sm min-w-[1.5rem] text-center">{item.cantidad}</span>
-                            <button onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm text-slate-500 hover:text-slate-900"><Plus className="w-3 h-3" /></button>
+                            <button onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 flex items-center justify-center bg-white dark:bg-slate-900 rounded-md shadow-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white"><Plus className="w-3 h-3" /></button>
                           </div>
                           <button onClick={() => removeFromCart(item.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                             <Trash2 className="w-4 h-4" />
@@ -247,24 +247,24 @@ export default function AsesorPage() {
                     </div>
                   ))}
                   
-                  <div className="pt-6 mt-6 border-t border-slate-200 border-dashed">
+                  <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-700 border-dashed">
                     <div className="flex justify-between items-end mb-6">
-                      <span className="text-slate-500 font-medium">Total a Pagar</span>
+                      <span className="text-slate-500 dark:text-slate-400 font-medium">Total a Pagar</span>
                       <span className="text-3xl font-black text-[#4a6c6f]">${totalCart.toLocaleString()}</span>
                     </div>
 
-                    <form onSubmit={handleCheckout} className="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                      <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                    <form onSubmit={handleCheckout} className="space-y-4 bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                      <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <CheckCircle className="w-5 h-5 text-[#4a6c6f]" /> Datos del Cliente
                       </h3>
                       <div>
-                        <input required type="text" placeholder="Nombre de la Tienda / Cliente" value={nombreCliente} onChange={e => setNombreCliente(e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none text-sm font-medium" />
+                        <input required type="text" placeholder="Nombre de la Tienda / Cliente" value={nombreCliente} onChange={e => setNombreCliente(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none text-sm font-medium" />
                       </div>
                       <div>
-                        <input required type="tel" placeholder="Teléfono" value={telefonoCliente} onChange={e => setTelefonoCliente(e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none text-sm font-medium" />
+                        <input required type="tel" placeholder="Teléfono" value={telefonoCliente} onChange={e => setTelefonoCliente(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none text-sm font-medium" />
                       </div>
                       <div>
-                        <input required type="text" placeholder="Dirección exacta" value={direccionEnvio} onChange={e => setDireccionEnvio(e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none text-sm font-medium" />
+                        <input required type="text" placeholder="Dirección exacta" value={direccionEnvio} onChange={e => setDireccionEnvio(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none text-sm font-medium" />
                       </div>
                       
                       <button 
@@ -287,14 +287,14 @@ export default function AsesorPage() {
       {/* MODAL DE ALERTAS PERSONALIZADAS */}
       {alertModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="flex items-start gap-4 mb-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${alertModal.isError ? 'bg-red-100 text-red-500' : 'bg-emerald-100 text-emerald-500'}`}>
                 {alertModal.isError ? <AlertCircle className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-800 leading-tight mb-1">{alertModal.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{alertModal.message}</p>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight mb-1">{alertModal.title}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{alertModal.message}</p>
               </div>
             </div>
             <button

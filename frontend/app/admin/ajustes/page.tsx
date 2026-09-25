@@ -35,6 +35,8 @@ export default function AjustesPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [portadaFile, setPortadaFile] = useState<File | null>(null);
   const [portadaPreview, setPortadaPreview] = useState<string | null>(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
+  const [removePortada, setRemovePortada] = useState(false);
   
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -80,10 +82,24 @@ export default function AjustesPage() {
       if (type === 'logo') {
         setLogoFile(file);
         setLogoPreview(URL.createObjectURL(file));
+        setRemoveLogo(false);
       } else {
         setPortadaFile(file);
         setPortadaPreview(URL.createObjectURL(file));
+        setRemovePortada(false);
       }
+    }
+  };
+
+  const handleRemoveImage = (type: 'logo' | 'portada') => {
+    if (type === 'logo') {
+      setLogoFile(null);
+      setLogoPreview(null);
+      setRemoveLogo(true);
+    } else {
+      setPortadaFile(null);
+      setPortadaPreview(null);
+      setRemovePortada(true);
     }
   };
 
@@ -121,6 +137,9 @@ export default function AjustesPage() {
     try {
       let finalLogoUrl = distribuidora?.logoUrl || null;
       let finalPortadaUrl = distribuidora?.portadaUrl || null;
+
+      if (removeLogo) finalLogoUrl = null;
+      if (removePortada) finalPortadaUrl = null;
 
       if (logoFile) {
         finalLogoUrl = await uploadImageToCloudinary(logoFile);
@@ -172,7 +191,7 @@ export default function AjustesPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-slate-500">
+      <div className="flex flex-col items-center justify-center p-12 text-slate-500 dark:text-slate-400">
         <Loader2 className="w-8 h-8 animate-spin text-[#4a6c6f] mb-4" />
         <p>Cargando ajustes...</p>
       </div>
@@ -190,11 +209,11 @@ export default function AjustesPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Configuración de Tienda</h1>
-        <p className="text-slate-500">Personaliza la información, diseño y enlace público de tu catálogo.</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Configuración de Tienda</h1>
+        <p className="text-slate-500 dark:text-slate-400">Personaliza la información, diseño y enlace público de tu catálogo.</p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-6 sm:p-8">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden p-6 sm:p-8">
         
         <form onSubmit={handleSave} className="space-y-8">
           
@@ -205,8 +224,18 @@ export default function AjustesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Foto de Portada */}
               <div className="space-y-2">
-                <label className="block font-medium text-slate-700">Foto de Portada</label>
-                <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition-colors">
+                <label className="block font-medium text-slate-700 dark:text-slate-200">Foto de Portada</label>
+                <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 text-center hover:bg-slate-50 dark:bg-slate-950 transition-colors relative group">
+                  {portadaPreview && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage('portada')}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-600 shadow-md"
+                      title="Quitar portada"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                  )}
                   <input
                     type="file"
                     accept="image/*"
@@ -221,15 +250,25 @@ export default function AjustesPage() {
                       <ImageIcon className="w-8 h-8 text-slate-400 mb-2" />
                     )}
                     <span className="text-sm text-[#4a6c6f] font-medium">Haz clic para subir Portada</span>
-                    <span className="text-xs text-slate-500 mt-1">Recomendado: 1200 x 400px (Horizontal)</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">Recomendado: 1200 x 400px (Horizontal)</span>
                   </label>
                 </div>
               </div>
 
               {/* Logo de Perfil */}
               <div className="space-y-2">
-                <label className="block font-medium text-slate-700">Logo de la Distribuidora</label>
-                <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition-colors">
+                <label className="block font-medium text-slate-700 dark:text-slate-200">Logo de la Distribuidora</label>
+                <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 text-center hover:bg-slate-50 dark:bg-slate-950 transition-colors relative group">
+                  {logoPreview && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage('logo')}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-600 shadow-md"
+                      title="Quitar logo"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                  )}
                   <input
                     type="file"
                     accept="image/*"
@@ -239,12 +278,12 @@ export default function AjustesPage() {
                   />
                   <label htmlFor="logo-upload" className="cursor-pointer flex flex-col items-center">
                     {logoPreview ? (
-                      <img src={logoPreview} alt="Logo" className="h-24 w-24 object-cover rounded-full mb-2 border border-slate-200" />
+                      <img src={logoPreview} alt="Logo" className="h-24 w-24 object-cover rounded-full mb-2 border border-slate-200 dark:border-slate-700" />
                     ) : (
                       <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
                     )}
                     <span className="text-sm text-[#4a6c6f] font-medium">Haz clic para subir Logo</span>
-                    <span className="text-xs text-slate-500 mt-1">Recomendado: 400 x 400px (Cuadrado/Círculo)</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">Recomendado: 400 x 400px (Cuadrado/Círculo)</span>
                   </label>
                 </div>
               </div>
@@ -256,7 +295,7 @@ export default function AjustesPage() {
             <h2 className="text-lg font-bold text-[#4a6c6f] border-b pb-2">2. Información Básica</h2>
             
             <div className="space-y-2">
-              <label className="block font-medium text-slate-700">Nombre de la Distribuidora</label>
+              <label className="block font-medium text-slate-700 dark:text-slate-200">Nombre de la Distribuidora</label>
               <div className="relative">
                 <Store className="w-5 h-5 absolute left-3 top-3 text-slate-400" />
                 <input
@@ -264,21 +303,21 @@ export default function AjustesPage() {
                   required
                   value={nombre}
                   onChange={e => setNombre(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="block font-medium text-slate-700">Descripción Corta</label>
-              <p className="text-sm text-slate-500 mb-2">Se mostrará en el directorio para que los tenderos sepan qué vendes.</p>
+              <label className="block font-medium text-slate-700 dark:text-slate-200">Descripción Corta</label>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Se mostrará en el directorio para que los tenderos sepan qué vendes.</p>
               <div className="relative">
                 <textarea
                   value={descripcion}
                   onChange={e => setDescripcion(e.target.value)}
                   maxLength={150}
                   rows={3}
-                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none resize-none"
+                  className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none resize-none"
                   placeholder="Ej. Distribuidores mayoristas de abarrotes, granos y productos de aseo al mejor precio."
                 />
                 <div className={`text-xs text-right mt-1 font-medium ${descripcion.length >= 150 ? 'text-red-500' : 'text-slate-400'}`}>
@@ -294,32 +333,32 @@ export default function AjustesPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="block font-medium text-slate-700">Pedido Mínimo (COP)</label>
+                <label className="block font-medium text-slate-700 dark:text-slate-200">Pedido Mínimo (COP)</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-2.5 text-slate-500 font-bold">$</span>
+                  <span className="absolute left-4 top-2.5 text-slate-500 dark:text-slate-400 font-bold">$</span>
                   <input
                     type="number"
                     value={pedidoMinimo}
                     onChange={e => setPedidoMinimo(e.target.value)}
                     placeholder="Ej. 50000"
-                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                    className="w-full pl-8 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="block font-medium text-slate-700">Tiempo de Entrega (Estimado)</label>
+                <label className="block font-medium text-slate-700 dark:text-slate-200">Tiempo de Entrega (Estimado)</label>
                 <input
                   type="text"
                   value={tiempoEntrega}
                   onChange={e => setTiempoEntrega(e.target.value)}
                   placeholder="Ej. 24 a 48 horas"
-                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                  className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none"
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-700">
               <input
                 type="checkbox"
                 id="envioGratis"
@@ -327,7 +366,7 @@ export default function AjustesPage() {
                 onChange={e => setEnvioGratis(e.target.checked)}
                 className="w-5 h-5 text-[#4a6c6f] rounded focus:ring-[#4a6c6f]"
               />
-              <label htmlFor="envioGratis" className="font-medium text-slate-700 cursor-pointer">
+              <label htmlFor="envioGratis" className="font-medium text-slate-700 dark:text-slate-200 cursor-pointer">
                 Ofrecer Envío Gratis por defecto
               </label>
             </div>
@@ -338,15 +377,15 @@ export default function AjustesPage() {
             <h2 className="text-lg font-bold text-[#4a6c6f] border-b pb-2">4. Enlace y Contacto</h2>
 
             <div className="space-y-2">
-              <label className="block font-medium text-slate-700">Enlace Personalizado (Slug)</label>
-              <p className="text-sm text-slate-500 mb-2">Este será el enlace que compartirás con tus clientes.</p>
+              <label className="block font-medium text-slate-700 dark:text-slate-200">Enlace Personalizado (Slug)</label>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Este será el enlace que compartirás con tus clientes.</p>
               <div className="relative">
                 <LinkIcon className="w-5 h-5 absolute left-3 top-3 text-slate-400" />
                 <input
                   type="text"
                   readOnly
                   value={slug}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 text-slate-500 font-medium border border-slate-200 rounded-xl outline-none cursor-not-allowed"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-medium border border-slate-200 dark:border-slate-700 rounded-xl outline-none cursor-not-allowed"
                 />
               </div>
               <div className="mt-1 p-3 bg-blue-50/50 rounded-lg text-xs text-blue-700 font-medium flex gap-2">
@@ -359,7 +398,7 @@ export default function AjustesPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block font-medium text-slate-700">Número de WhatsApp (Pedidos)</label>
+              <label className="block font-medium text-slate-700 dark:text-slate-200">Número de WhatsApp (Pedidos)</label>
               <div className="relative">
                 <Phone className="w-5 h-5 absolute left-3 top-3 text-slate-400" />
                 <input
@@ -367,11 +406,11 @@ export default function AjustesPage() {
                   required
                   value={telefono}
                   onChange={e => setTelefono(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#56cbf9] outline-none"
                   placeholder="Ej. 573001234567"
                 />
               </div>
-              <p className="text-xs text-slate-500">Asegúrate de incluir el código de país si es necesario (ej. 57 para Colombia).</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Asegúrate de incluir el código de país si es necesario (ej. 57 para Colombia).</p>
             </div>
           </div>
 
@@ -387,7 +426,7 @@ export default function AjustesPage() {
             </div>
           )}
 
-          <div className="pt-4 border-t border-slate-100 flex justify-end">
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
             <button
               type="submit"
               disabled={isSubmitting}

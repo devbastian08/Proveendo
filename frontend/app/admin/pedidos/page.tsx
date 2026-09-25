@@ -159,7 +159,7 @@ export default function PedidosPage() {
       case 'entregado':
         return <span className="flex w-fit items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700"><CheckCircle className="w-3 h-3"/> Entregado</span>;
       default:
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700">{estado}</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">{estado}</span>;
     }
   };
 
@@ -200,15 +200,15 @@ export default function PedidosPage() {
           {userRole === 'asesor' && (
             <button 
               onClick={() => router.push('/asesor')}
-              className="p-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-full transition-colors text-slate-600 hover:text-slate-900 shadow-sm"
+              className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-950 rounded-full transition-colors text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white shadow-sm"
               title="Volver a Toma de Pedidos"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Gestión de Pedidos</h1>
-            <p className="text-slate-500">Administra y despacha las órdenes de tus clientes.</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Gestión de Pedidos</h1>
+            <p className="text-slate-500 dark:text-slate-400">Administra y despacha las órdenes de tus clientes.</p>
           </div>
         </div>
         
@@ -216,13 +216,13 @@ export default function PedidosPage() {
         <div className="flex bg-slate-200/50 p-1 rounded-lg w-fit">
           <button
             onClick={() => setFiltroTab('activos')}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${filtroTab === 'activos' ? 'bg-white text-[#4a6c6f] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${filtroTab === 'activos' ? 'bg-white dark:bg-slate-900 text-[#4a6c6f] shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200'}`}
           >
             Activos
           </button>
           <button
             onClick={() => setFiltroTab('historial')}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${filtroTab === 'historial' ? 'bg-white text-[#4a6c6f] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${filtroTab === 'historial' ? 'bg-white dark:bg-slate-900 text-[#4a6c6f] shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200'}`}
           >
             Historial (Entregados)
           </button>
@@ -231,50 +231,50 @@ export default function PedidosPage() {
 
       {/* Mini-Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4">
           <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center shrink-0">
             <DollarSign className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Ventas Hoy</p>
-            <p className="text-xl font-black text-slate-900">${ventasHoy.toLocaleString()}</p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Ventas Hoy</p>
+            <p className="text-xl font-black text-slate-900 dark:text-white">${ventasHoy.toLocaleString()}</p>
           </div>
         </div>
         
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4">
           <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center shrink-0">
             <Clock className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Pendientes de Alistar</p>
-            <p className="text-xl font-black text-slate-900">{pendientesAlistar} <span className="text-sm font-medium text-slate-500">pedidos</span></p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Pendientes de Alistar</p>
+            <p className="text-xl font-black text-slate-900 dark:text-white">{pendientesAlistar} <span className="text-sm font-medium text-slate-500 dark:text-slate-400">pedidos</span></p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4">
           <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0">
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Producto Estrella</p>
-            <p className="text-sm font-bold text-slate-900 line-clamp-1" title={productoEstrella.nombre}>{productoEstrella.nombre}</p>
-            <p className="text-xs text-slate-500">{productoEstrella.cant} uds vendidas</p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Producto Estrella</p>
+            <p className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1" title={productoEstrella.nombre}>{productoEstrella.nombre}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{productoEstrella.cant} uds vendidas</p>
           </div>
         </div>
       </div>
       
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-12 text-slate-500">
+          <div className="flex flex-col items-center justify-center p-12 text-slate-500 dark:text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-[#4a6c6f] mb-4" />
             <p>Cargando pedidos...</p>
           </div>
         ) : pedidosFiltrados.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-slate-500 text-center">
+          <div className="flex flex-col items-center justify-center p-12 text-slate-500 dark:text-slate-400 text-center">
             <div className="w-16 h-16 bg-[#e2e8ce] text-[#4a6c6f] rounded-full flex items-center justify-center mb-4">
               <Package className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
               {filtroTab === 'activos' ? 'No hay pedidos activos' : 'No hay historial de entregas'}
             </h3>
             <p className="max-w-sm mb-6">
@@ -287,7 +287,7 @@ export default function PedidosPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100 text-sm text-slate-500">
+                <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400">
                   <th className="px-6 py-4 font-medium">Pedido #</th>
                   <th className="px-6 py-4 font-medium">Fecha</th>
                   <th className="px-6 py-4 font-medium">Cliente</th>
@@ -298,16 +298,16 @@ export default function PedidosPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {pedidosFiltrados.map((pedido) => (
-                  <tr key={pedido.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-900">#{pedido.codigo || pedido.id.toString().padStart(4, '0')}</td>
-                    <td className="px-6 py-4 text-slate-600 text-sm">
+                  <tr key={pedido.id} className="hover:bg-slate-50 dark:bg-slate-950/50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">#{pedido.codigo || pedido.id.toString().padStart(4, '0')}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm">
                       {new Date(pedido.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-bold text-slate-900 text-sm">{pedido.nombreCliente || `Tendero ${pedido.tenderoId}`}</p>
-                      <p className="text-xs text-slate-500">{pedido.telefonoCliente || 'Sin teléfono'}</p>
+                      <p className="font-bold text-slate-900 dark:text-white text-sm">{pedido.nombreCliente || `Tendero ${pedido.tenderoId}`}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{pedido.telefonoCliente || 'Sin teléfono'}</p>
                     </td>
-                    <td className="px-6 py-4 font-medium text-slate-900">${pedido.total.toLocaleString()}</td>
+                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">${pedido.total.toLocaleString()}</td>
                     <td className="px-6 py-4">
                       {getStatusBadge(pedido.estado)}
                     </td>
@@ -343,8 +343,8 @@ export default function PedidosPage() {
       {selectedReactivarId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => { setSelectedReactivarId(null); setMotivoReactivacion(''); }}></div>
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6 border-t-4 border-amber-500 animate-in zoom-in-95 duration-200">
-            <h2 className="text-xl font-bold text-slate-900 mb-2 flex items-center gap-2">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6 border-t-4 border-amber-500 animate-in zoom-in-95 duration-200">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
               <RefreshCw className="w-6 h-6 text-amber-500" />
               Reactivar Pedido
             </h2>
@@ -352,7 +352,7 @@ export default function PedidosPage() {
               <div className="p-3 bg-amber-50 text-amber-800 rounded-lg text-sm">
                 Al confirmar, este pedido será devuelto a la pestaña de <b>Activos</b> en estado <b>Pendiente</b> para que vuelva a ser despachado.
               </div>
-              <label className="block text-sm font-medium text-slate-700">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
                 Motivo del error (Trazabilidad)
               </label>
               <div className="relative">
@@ -360,7 +360,7 @@ export default function PedidosPage() {
                   value={motivoReactivacion}
                   onChange={(e) => setMotivoReactivacion(e.target.value)}
                   placeholder="Ej. El cliente rechazó la caja porque faltaba producto..."
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 outline-none resize-none min-h-[80px]"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-amber-400 outline-none resize-none min-h-[80px]"
                   required
                   maxLength={200}
                 />
@@ -373,7 +373,7 @@ export default function PedidosPage() {
               <button
                 type="button"
                 onClick={() => { setSelectedReactivarId(null); setMotivoReactivacion(''); }}
-                className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg"
+                className="px-4 py-2 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-50 dark:bg-slate-950 rounded-lg"
               >
                 Cancelar
               </button>
@@ -396,16 +396,16 @@ export default function PedidosPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedPedido(null)}></div>
           
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header Modal */}
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   Pedido #{selectedPedido.codigo || selectedPedido.id.toString().padStart(4, '0')}
                 </h2>
                 <div className="mt-1">{getStatusBadge(selectedPedido.estado)}</div>
               </div>
-              <button onClick={() => setSelectedPedido(null)} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200">
+              <button onClick={() => setSelectedPedido(null)} className="p-2 text-slate-400 hover:text-slate-600 dark:text-slate-300 rounded-full hover:bg-slate-200">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -437,11 +437,11 @@ export default function PedidosPage() {
               {/* Lista de Empaque */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-bold text-slate-900 mb-1">Detalle de Productos</h3>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Detalle de Productos</h3>
                   <div className="flex gap-2">
                     <button 
                       onClick={() => window.print()}
-                      className="px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-bold flex items-center gap-1 transition-colors"
+                      className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 rounded-lg text-sm font-bold flex items-center gap-1 transition-colors"
                     >
                       <Printer className="w-4 h-4" />
                       Imprimir Ticket
@@ -449,28 +449,28 @@ export default function PedidosPage() {
                   </div>
                 </div>
                 
-                <div className="border border-slate-100 rounded-xl overflow-hidden">
+                <div className="border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
                   <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50 border-b border-slate-100">
+                    <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
                       <tr>
-                        <th className="px-4 py-2 font-medium text-slate-500">Cant.</th>
-                        <th className="px-4 py-2 font-medium text-slate-500">Producto</th>
-                        <th className="px-4 py-2 font-medium text-slate-500 text-right">Subtotal</th>
+                        <th className="px-4 py-2 font-medium text-slate-500 dark:text-slate-400">Cant.</th>
+                        <th className="px-4 py-2 font-medium text-slate-500 dark:text-slate-400">Producto</th>
+                        <th className="px-4 py-2 font-medium text-slate-500 dark:text-slate-400 text-right">Subtotal</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {selectedPedido.detalles.map(det => (
                         <tr key={det.id}>
-                          <td className="px-4 py-3 font-bold text-slate-900">{det.cantidad}x</td>
-                          <td className="px-4 py-3 text-slate-700">{det.producto.nombre}</td>
-                          <td className="px-4 py-3 font-medium text-slate-900 text-right">${det.subtotal.toLocaleString()}</td>
+                          <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{det.cantidad}x</td>
+                          <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{det.producto.nombre}</td>
+                          <td className="px-4 py-3 font-medium text-slate-900 dark:text-white text-right">${det.subtotal.toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-slate-50 border-t border-slate-100">
+                    <tfoot className="bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800">
                       <tr>
-                        <td colSpan={2} className="px-4 py-3 font-bold text-slate-600 text-right">TOTAL A COBRAR:</td>
-                        <td className="px-4 py-3 font-black text-slate-900 text-right">${selectedPedido.total.toLocaleString()}</td>
+                        <td colSpan={2} className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-right">TOTAL A COBRAR:</td>
+                        <td className="px-4 py-3 font-black text-slate-900 dark:text-white text-right">${selectedPedido.total.toLocaleString()}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -480,7 +480,7 @@ export default function PedidosPage() {
             </div>
             
             {/* Acciones de Estado */}
-            <div className="p-6 border-t border-slate-100 bg-slate-50 flex flex-col gap-3">
+            <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col gap-3">
               {selectedPedido.estado === 'pendiente' && (
                 <div className="flex justify-end">
                   <button 
@@ -514,7 +514,7 @@ export default function PedidosPage() {
                     <select 
                       value={selectedConductorId} 
                       onChange={(e) => setSelectedConductorId(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white border border-purple-200 rounded-lg outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-purple-200 rounded-lg outline-none focus:ring-2 focus:ring-purple-400"
                     >
                       <option value="">Selecciona un conductor...</option>
                       {equipo.map(c => (
@@ -570,7 +570,7 @@ export default function PedidosPage() {
                   <select
                     value={overrideEstado}
                     onChange={(e) => setOverrideEstado(e.target.value)}
-                    className="flex-1 px-3 py-2.5 bg-white border border-red-200 rounded-lg outline-none focus:ring-2 focus:ring-red-400 text-slate-700"
+                    className="flex-1 px-3 py-2.5 bg-white dark:bg-slate-900 border border-red-200 rounded-lg outline-none focus:ring-2 focus:ring-red-400 text-slate-700 dark:text-slate-200"
                   >
                     <option value="">Selecciona el estado correcto...</option>
                     <option value="pendiente">Pendiente</option>
@@ -601,7 +601,7 @@ export default function PedidosPage() {
 
     {/* LAYOUT DE IMPRESIÓN (SOLO VISIBLE AL IMPRIMIR) */}
     {selectedPedido && (
-      <div className="hidden print:block font-mono text-black w-[80mm] max-w-full mx-auto bg-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+      <div className="hidden print:block font-mono text-black w-[80mm] max-w-full mx-auto bg-white dark:bg-slate-900" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
         
         {/* HEADER */}
         <div className="text-center mb-4 border-b-2 border-black pb-4">
@@ -680,14 +680,14 @@ export default function PedidosPage() {
     {/* MODAL DE ALERTAS PERSONALIZADAS */}
     {alertModal && (
       <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-        <div className="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
+        <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 flex flex-col shadow-2xl animate-in zoom-in-95 duration-300">
           <div className="flex items-start gap-4 mb-4">
             <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${alertModal.isError ? 'bg-red-100 text-red-500' : 'bg-emerald-100 text-emerald-500'}`}>
               <AlertCircle className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-800 leading-tight mb-1">{alertModal.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{alertModal.message}</p>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight mb-1">{alertModal.title}</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{alertModal.message}</p>
             </div>
           </div>
           <button

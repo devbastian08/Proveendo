@@ -154,21 +154,21 @@ export default function TorreControlPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] lg:h-screen w-full overflow-hidden bg-slate-50">
+    <div className="flex h-[calc(100vh-4rem)] lg:h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-950">
       {/* Sidebar de Control */}
-      <div className="w-96 bg-white border-r border-slate-200 flex flex-col h-full shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
-        <div className="p-6 border-b border-slate-100">
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+      <div className="w-96 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col h-full shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
             <Navigation className="w-6 h-6 text-[#4a6c6f]" />
             Control de Logística
           </h1>
-          <p className="text-slate-500 text-sm mt-1">Supervisa y ordena las rutas en tiempo real.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Supervisa y ordena las rutas en tiempo real.</p>
         </div>
 
         {/* Lista de Conductores (Tabs) */}
-        <div className="flex overflow-x-auto p-4 gap-2 border-b border-slate-100 no-scrollbar">
+        <div className="flex overflow-x-auto p-4 gap-2 border-b border-slate-100 dark:border-slate-800 no-scrollbar">
           {conductores.length === 0 && !loading && (
-            <p className="text-sm text-slate-500 text-center w-full">No hay conductores con rutas asignadas</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 text-center w-full">No hay conductores con rutas asignadas</p>
           )}
           {conductores.map(c => (
             <button
@@ -177,7 +177,7 @@ export default function TorreControlPage() {
               className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
                 selectedConductorId === c.id
                   ? 'bg-purple-600 text-white shadow-md'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
               }`}
             >
               🚚 {c.nombre}
@@ -188,7 +188,7 @@ export default function TorreControlPage() {
         {/* Panel del Conductor Seleccionado */}
         <div className="flex-1 overflow-y-auto p-4 relative">
           {actionLoading && (
-            <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-20 flex items-center justify-center">
+            <div className="absolute inset-0 bg-white dark:bg-slate-900/50 backdrop-blur-sm z-20 flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
             </div>
           )}
@@ -219,14 +219,14 @@ export default function TorreControlPage() {
 
               {/* Lista de Entregas (Control Manual) */}
               <div>
-                <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
+                <h3 className="font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                   <ListOrdered className="w-4 h-4 text-purple-600" />
                   Orden de Entrega Forzado
                 </h3>
                 
                 <div className="space-y-2">
                   {selectedConductor.entregas?.map((entrega: any, idx: number) => (
-                    <div key={entrega.id} className="bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-all">
+                    <div key={entrega.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-all">
                       <div className="flex flex-col items-center justify-center gap-1">
                         <button 
                           onClick={() => moverOrden(selectedConductor.id, idx, idx - 1)}
@@ -235,7 +235,7 @@ export default function TorreControlPage() {
                         >
                           <ChevronUp className="w-5 h-5" />
                         </button>
-                        <span className="font-black text-slate-800 text-lg">{entrega.orden || idx + 1}</span>
+                        <span className="font-black text-slate-800 dark:text-slate-100 text-lg">{entrega.orden || idx + 1}</span>
                         <button 
                           onClick={() => moverOrden(selectedConductor.id, idx, idx + 1)}
                           disabled={idx === selectedConductor.entregas.length - 1}
@@ -245,8 +245,8 @@ export default function TorreControlPage() {
                         </button>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-900 truncate">{entrega.pedido.nombreCliente}</p>
-                        <p className="text-xs text-slate-500 truncate flex items-center gap-1">
+                        <p className="font-bold text-slate-900 dark:text-white truncate">{entrega.pedido.nombreCliente}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
                           <MapPin className="w-3 h-3 shrink-0" /> {entrega.pedido.direccionEnvio}
                         </p>
                       </div>
@@ -262,9 +262,9 @@ export default function TorreControlPage() {
       {/* Mapa Principal */}
       <div className="flex-1 h-full relative bg-slate-200">
         {loading && !conductores.length ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-50/80 backdrop-blur-sm">
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-50 dark:bg-slate-950/80 backdrop-blur-sm">
             <Loader2 className="w-10 h-10 text-purple-600 animate-spin mb-4" />
-            <p className="text-slate-600 font-medium">Cargando ubicación de flotilla...</p>
+            <p className="text-slate-600 dark:text-slate-300 font-medium">Cargando ubicación de flotilla...</p>
           </div>
         ) : (
           <AdminMap conductores={conductores} selectedConductorId={selectedConductorId} origen={origen} />

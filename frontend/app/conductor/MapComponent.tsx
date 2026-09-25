@@ -68,7 +68,7 @@ const MapOverlayControls = ({ currentPos }: { currentPos: { lat: number, lng: nu
               if (currentPos) map.flyTo([currentPos.lat, currentPos.lng], 16);
               else showToast("Buscando señal GPS...");
             }}
-            className="bg-white hover:bg-slate-50 p-2 text-slate-700 border-b border-slate-200 transition-colors"
+            className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-950 p-2 text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 transition-colors"
             title="Centrar en mi ubicación"
           >
             <LocateFixed className="w-5 h-5" />
@@ -84,7 +84,7 @@ const MapOverlayControls = ({ currentPos }: { currentPos: { lat: number, lng: nu
                 document.exitFullscreen();
               }
             }}
-            className="bg-white hover:bg-slate-50 p-2 text-slate-700 transition-colors"
+            className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-950 p-2 text-slate-700 dark:text-slate-200 transition-colors"
             title="Pantalla Completa"
           >
             <Maximize className="w-5 h-5" />

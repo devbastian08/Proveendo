@@ -145,8 +145,8 @@ export default function EquipoPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Gestión de Equipo</h1>
-          <p className="text-slate-500">Administra los asesores y conductores de tu distribuidora.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Gestión de Equipo</h1>
+          <p className="text-slate-500 dark:text-slate-400">Administra los asesores y conductores de tu distribuidora.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -157,25 +157,25 @@ export default function EquipoPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-12 text-slate-500">
+          <div className="flex flex-col items-center justify-center p-12 text-slate-500 dark:text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-[#4a6c6f] mb-4" />
             <p>Cargando equipo...</p>
           </div>
         ) : equipo.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-slate-500 text-center">
+          <div className="flex flex-col items-center justify-center p-12 text-slate-500 dark:text-slate-400 text-center">
             <div className="w-16 h-16 bg-[#e2e8ce] text-[#4a6c6f] rounded-full flex items-center justify-center mb-4">
               <Users className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1">Aún no hay equipo</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Aún no hay equipo</h3>
             <p className="max-w-sm mb-6">Crea cuentas para tus asesores para que puedan tomar pedidos.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100 text-sm text-slate-500">
+                <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400">
                   <th className="px-6 py-4 font-medium">Nombre</th>
                   <th className="px-6 py-4 font-medium">Correo</th>
                   <th className="px-6 py-4 font-medium">Rol</th>
@@ -184,9 +184,9 @@ export default function EquipoPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {equipo.map((miembro) => (
-                  <tr key={miembro.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900">{miembro.nombre}</td>
-                    <td className="px-6 py-4 text-slate-600">{miembro.correo}</td>
+                  <tr key={miembro.id} className="hover:bg-slate-50 dark:bg-slate-950/50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{miembro.nombre}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{miembro.correo}</td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-2">
                         <span className="flex items-center gap-1 w-fit px-3 py-1 bg-[#e2e8ce]/50 text-[#4a6c6f] font-bold text-xs rounded-full capitalize">
@@ -198,7 +198,7 @@ export default function EquipoPage() {
                             className={`flex items-center justify-center gap-1 w-fit px-3 py-1 text-xs font-bold rounded-full transition-colors border ${
                               miembro.enRuta
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                                : 'bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800'
                             }`}
                           >
                             {miembro.enRuta ? (
@@ -227,7 +227,7 @@ export default function EquipoPage() {
                           setContrasena('');
                           setIsModalOpen(true);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-[#4a6c6f] hover:bg-slate-100 rounded-lg transition-colors font-medium text-sm border border-transparent hover:border-slate-200 ml-auto"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-slate-500 dark:text-slate-400 hover:text-[#4a6c6f] hover:bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors font-medium text-sm border border-transparent hover:border-slate-200 dark:border-slate-700 ml-auto"
                         title="Editar datos"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -245,55 +245,55 @@ export default function EquipoPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => { setIsModalOpen(false); setEditingId(null); setNombre(''); setCorreo(''); setContrasena(''); }}></div>
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
               <UserPlus className="w-6 h-6 text-[#4a6c6f]" />
               {editingId ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
             </h2>
             
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Nombre Completo</label>
                 <input
                   type="text"
                   required
                   value={nombre}
                   onChange={e => setNombre(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
                   placeholder="Ej. Juan Pérez"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Correo Electrónico</label>
                 <input
                   type="email"
                   required
                   value={correo}
                   onChange={e => setCorreo(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
                   placeholder="juan@empresa.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Contraseña</label>
                 <input
                   type="text"
                   required={!editingId}
                   value={contrasena}
                   onChange={e => setContrasena(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
                   placeholder={editingId ? 'Déjalo en blanco para no cambiarla' : 'Asigna una contraseña segura'}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Rol en la Tienda</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Rol en la Tienda</label>
                 <select
                   value={rol}
                   onChange={e => setRol(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
+                  className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#56cbf9] outline-none"
                 >
                   <option value="asesor">Asesor (Registrar Pedidos y Clientes)</option>
                   <option value="conductor">Conductor (Ver Rutas y Entregas)</option>
@@ -301,16 +301,16 @@ export default function EquipoPage() {
               </div>
 
               {rol === 'asesor' && (
-                <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors">
+                <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-100 dark:bg-slate-800 transition-colors">
                   <input 
                     type="checkbox" 
                     checked={puedeAlistar}
                     onChange={(e) => setPuedeAlistar(e.target.checked)}
-                    className="w-5 h-5 rounded text-[#4a6c6f] focus:ring-[#4a6c6f] border-slate-300"
+                    className="w-5 h-5 rounded text-[#4a6c6f] focus:ring-[#4a6c6f] border-slate-300 dark:border-slate-600"
                   />
                   <div>
-                    <div className="text-sm font-bold text-slate-800">Permitir Alistamiento (Bodega)</div>
-                    <div className="text-xs text-slate-500">Este asesor podrá ver y cambiar el estado de los pedidos.</div>
+                    <div className="text-sm font-bold text-slate-800 dark:text-slate-100">Permitir Alistamiento (Bodega)</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">Este asesor podrá ver y cambiar el estado de los pedidos.</div>
                   </div>
                 </label>
               )}
@@ -322,11 +322,11 @@ export default function EquipoPage() {
                 </div>
               )}
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => { setIsModalOpen(false); setEditingId(null); setNombre(''); setCorreo(''); setContrasena(''); }}
-                  className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg"
+                  className="px-4 py-2 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-50 dark:bg-slate-950 rounded-lg"
                 >
                   Cancelar
                 </button>
@@ -348,18 +348,18 @@ export default function EquipoPage() {
       {confirmModal.isOpen && confirmModal.miembro && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setConfirmModal({ isOpen: false, miembro: null })}></div>
-          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 text-center">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner ${confirmModal.miembro.enRuta ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-500'}`}>
+          <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6 text-center">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner ${confirmModal.miembro.enRuta ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400' : 'bg-emerald-100 text-emerald-500'}`}>
               <Truck className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Confirmar Acción</h2>
-            <p className="text-slate-500 mb-6">
-              ¿Seguro que deseas {confirmModal.miembro.enRuta ? 'retirar de ruta a' : 'poner en ruta a'} <span className="font-bold text-slate-700">{confirmModal.miembro.nombre}</span>?
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Confirmar Acción</h2>
+            <p className="text-slate-500 dark:text-slate-400 mb-6">
+              ¿Seguro que deseas {confirmModal.miembro.enRuta ? 'retirar de ruta a' : 'poner en ruta a'} <span className="font-bold text-slate-700 dark:text-slate-200">{confirmModal.miembro.nombre}</span>?
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmModal({ isOpen: false, miembro: null })}
-                className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+                className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-colors"
               >
                 Cancelar
               </button>

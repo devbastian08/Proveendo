@@ -25,15 +25,15 @@ export default function AsesorLayout({ children }: { children: React.ReactNode }
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-20">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-800 pb-20">
       {/* Header Asesor */}
-      <header className="bg-white text-[#4a6c6f] shadow-sm border-b border-slate-200 sticky top-0 z-40">
+      <header className="bg-white dark:bg-slate-900 text-[#4a6c6f] shadow-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40">
         {/* Botones de acción derecha (Desktop) */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 hidden sm:flex items-center gap-3">
           {isClient && user?.puedeAlistar && (
             <button 
               onClick={goToBodega}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-[#4a6c6f] hover:bg-slate-50 rounded-full transition-colors border border-[#4a6c6f]/20 hover:border-[#4a6c6f]/50 shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-[#4a6c6f] hover:bg-slate-50 dark:bg-slate-950 rounded-full transition-colors border border-[#4a6c6f]/20 hover:border-[#4a6c6f]/50 shadow-sm"
               title="Ir a Bodega"
             >
               <PackageSearch className="w-4 h-4" /> Bodega
@@ -41,7 +41,7 @@ export default function AsesorLayout({ children }: { children: React.ReactNode }
           )}
           <button 
             onClick={handleLogout} 
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors border border-transparent hover:border-red-100 shadow-sm hover:shadow"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors border border-transparent hover:border-red-100 shadow-sm hover:shadow"
             title="Cerrar sesión"
           >
             Salir <LogOut className="w-4 h-4" />
@@ -53,7 +53,7 @@ export default function AsesorLayout({ children }: { children: React.ReactNode }
           {isClient && user?.puedeAlistar && (
             <button 
               onClick={goToBodega}
-              className="flex items-center justify-center w-10 h-10 text-[#4a6c6f] hover:bg-slate-50 rounded-full transition-colors"
+              className="flex items-center justify-center w-10 h-10 text-[#4a6c6f] hover:bg-slate-50 dark:bg-slate-950 rounded-full transition-colors"
               title="Ir a Bodega"
             >
               <PackageSearch className="w-5 h-5" />
@@ -61,7 +61,7 @@ export default function AsesorLayout({ children }: { children: React.ReactNode }
           )}
           <button 
             onClick={handleLogout} 
-            className="flex items-center justify-center w-10 h-10 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+            className="flex items-center justify-center w-10 h-10 text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
             title="Cerrar sesión"
           >
             <LogOut className="w-5 h-5" />
