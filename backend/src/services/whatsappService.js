@@ -115,12 +115,8 @@ const handleIncomingMessage = async (webhookData, prisma) => {
         const user = await prisma.tendero.findFirst({ where: { telefono: senderPhone } });
         
         if (textReceived === "4") {
-           chatStates.delete(senderPhone);
-           // O crear un ticket general sin pedido
-           await prisma.ticketSoporte.create({
-             data: { motivo: "Consulta general", tenderoId: user.id }
-           });
-           return sendWhatsAppMessage(senderPhone, "✅ Hemos creado un ticket general de soporte. Un asesor te contactará pronto.");
+           chatStates.set(senderPhone, { step: 'AWAITING_GENERAL_QUERY', timestamp: Date.now() });
+           return sendWhatsAppMessage(senderPhone, "Por favor escribe detalladamente tu consulta o duda en un solo mensaje:");
         } else if (isNaN(selectedIndex) || !currentState.orders[selectedIndex]) {
            return sendWhatsAppMessage(senderPhone, "❌ Opción no válida. Por favor, responde únicamente con el número de la lista (ejemplo: 1 o 2).");
         }
@@ -153,6 +149,41 @@ const handleIncomingMessage = async (webhookData, prisma) => {
         const codeToDisplay = currentState.orderCode || currentState.orderId;
         chatStates.delete(senderPhone);
         return sendWhatsAppMessage(senderPhone, `✅ ¡Listo! Hemos creado tu ticket de reclamo para el pedido #${codeToDisplay}. Un asesor te contactará muy pronto para solucionarlo.`);
+      }
+
+      if (currentState.step === 'AWAITING_GENERAL_QUERY') {
+        const user = await prisma.tendero.findFirst({ where: { telefono: senderPhone } });
+        const newTicket = await prisma.ticketSoporte.create({
+          data: { motivo: textReceived, tenderoId: user.id }
+        });
+        chatStates.delete(senderPhone);
+        return sendWhatsAppMessage(senderPhone, `✅ ¡Listo! Hemos creado tu ticket de consulta general (Ticket #${newTicket.id.toString().padStart(4, '0')}). Un asesor lo revisará y te responderá muy pronto.`);
+      }
+
+      if (currentState.step === 'AWAITING_TICKET_DEBATE') {
+        if (textReceived === "1") {
+          chatStates.delete(senderPhone);
+          return sendWhatsAppMessage(senderPhone, "¡Nos alegra haberte ayudado! Que tengas un excelente día.");
+        } else if (textReceived === "2") {
+          chatStates.set(senderPhone, { step: 'AWAITING_DEBATE_REASON', ticketId: currentState.ticketId, timestamp: Date.now() });
+          return sendWhatsAppMessage(senderPhone, "Lamentamos que la solución no haya sido satisfactoria. Por favor, explícanos en un solo mensaje por qué estás en desacuerdo para que un asesor lo revise nuevamente:");
+        } else {
+          return sendWhatsAppMessage(senderPhone, "❌ Opción no válida. Responde *1* si estás conforme o *2* si quieres reabrir el caso.");
+        }
+      }
+
+      if (currentState.step === 'AWAITING_DEBATE_REASON') {
+        const ticketId = currentState.ticketId;
+        const ticket = await prisma.ticketSoporte.findUnique({ where: { id: ticketId } });
+        if (ticket) {
+          const nuevoMotivo = `${ticket.motivo}\n\n*[CLIENTE NO ACEPTÓ SOLUCIÓN]*:\n"${textReceived}"`;
+          await prisma.ticketSoporte.update({
+            where: { id: ticketId },
+            data: { estado: 'abierto', motivo: nuevoMotivo, atendidoPorId: null }
+          });
+        }
+        chatStates.delete(senderPhone);
+        return sendWhatsAppMessage(senderPhone, "✅ Tu caso ha sido reabierto y devuelto a la bandeja de nuestros asesores. Lo revisaremos prioritariamente.");
       }
     }
 
@@ -190,11 +221,21 @@ const handleIncomingMessage = async (webhookData, prisma) => {
       }
     } else if (textReceived === "4") {
       // Soporte
+      const openTicket = await prisma.ticketSoporte.findFirst({
+        where: { tenderoId: user.id, estado: { in: ['abierto', 'en_progreso'] } }
+      });
+      
+      if (openTicket) {
+        const estadoTxt = openTicket.estado === 'abierto' ? 'pendiente' : 'en progreso';
+        await sendWhatsAppMessage(senderPhone, `Ya tienes un caso de soporte activo que está *${estadoTxt}* (Ticket #${openTicket.id.toString().padStart(4, '0')}).\n\nPor favor espera a que nuestro equipo te dé una respuesta antes de crear otro reclamo.`);
+        return;
+      }
+
       const lastOrders = await prisma.pedido.findMany({ where: { tenderoId: user.id }, orderBy: { fecha: 'desc' }, take: 3 });
       
       if (lastOrders.length === 0) {
-        await prisma.ticketSoporte.create({ data: { motivo: "Consulta general", tenderoId: user.id } });
-        await sendWhatsAppMessage(senderPhone, "✅ Hemos creado un ticket de soporte para ti. Un asesor te contactará pronto.");
+        chatStates.set(senderPhone, { step: 'AWAITING_GENERAL_QUERY', timestamp: Date.now() });
+        await sendWhatsAppMessage(senderPhone, "Por favor escribe detalladamente tu consulta o duda en un solo mensaje:");
       } else {
         chatStates.set(senderPhone, { step: 'AWAITING_ORDER_SELECTION', orders: lastOrders, timestamp: Date.now() });
         
@@ -219,7 +260,14 @@ const handleIncomingMessage = async (webhookData, prisma) => {
   }
 };
 
+const notifyTicketResolved = async (ticketId, telefono, notasAdmin) => {
+  const msg = `¡Hola! Tu ticket de soporte #${ticketId.toString().padStart(4, '0')} ha sido marcado como *RESUELTO*.\n\n*Respuesta de nuestro equipo:*\n_${notasAdmin}_\n\n¿Estás conforme con la solución brindada?\n*1️⃣* Sí, muchas gracias\n*2️⃣* No, quiero reabrir el caso`;
+  chatStates.set(telefono, { step: 'AWAITING_TICKET_DEBATE', ticketId: ticketId, timestamp: Date.now() });
+  await sendWhatsAppMessage(telefono, msg);
+};
+
 module.exports = {
   sendWhatsAppMessage,
-  handleIncomingMessage
+  handleIncomingMessage,
+  notifyTicketResolved
 };

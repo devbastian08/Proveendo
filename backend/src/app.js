@@ -1185,6 +1185,77 @@ app.get('/api/tickets', authMiddleware, async (req, res) => {
   res.json(tickets);
 });
 
+// 1.5 Crear Pedido de Reposición (Costo $0)
+app.post('/api/tickets/:id/reposicion', authMiddleware, async (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  const { productos } = req.body; // Array de { id, cantidad }
+  const userId = req.user.id;
+  
+  const user = await prisma.usuario.findUnique({ where: { id: userId } });
+  if (user.rol !== 'administrador' && user.rol !== 'distribuidor' && !user.puedeAtenderTickets) {
+    return res.status(403).json({ error: 'No tienes permiso para atender tickets' });
+  }
+
+  const ticket = await prisma.ticketSoporte.findUnique({ 
+    where: { id: ticketId },
+    include: { pedido: true } 
+  });
+  if (!ticket || !ticket.pedido) return res.status(404).json({ error: 'Ticket o pedido no encontrado' });
+
+  // Crear el código del nuevo pedido
+  const today = new Date();
+  const dateStr = today.toISOString().split('T')[0].replace(/-/g, '').slice(2);
+  const totalPedidosHoy = await prisma.pedido.count({
+    where: { fecha: { gte: new Date(today.setHours(0,0,0,0)) } }
+  });
+  const codigo = `REP-${dateStr}-${(totalPedidosHoy + 1).toString().padStart(3, '0')}`;
+
+  let detallesCrear = [];
+  
+  // Descontar inventario y preparar detalles
+  for (const prod of productos) {
+    if (prod.cantidad <= 0) continue;
+    const p = await prisma.producto.findUnique({ where: { id: prod.id } });
+    if (!p) continue;
+    if (p.stock < prod.cantidad) return res.status(400).json({ error: `Stock insuficiente para ${p.nombre}` });
+    
+    await prisma.producto.update({
+      where: { id: p.id },
+      data: { stock: p.stock - prod.cantidad }
+    });
+    
+    detallesCrear.push({
+      productoId: p.id,
+      cantidad: prod.cantidad,
+      subtotal: 0 // Es reposición, así que el costo al cliente es $0
+    });
+  }
+
+  if (detallesCrear.length === 0) {
+    return res.status(400).json({ error: 'No se enviaron productos válidos' });
+  }
+
+  const nuevoPedido = await prisma.pedido.create({
+    data: {
+      codigo,
+      total: 0,
+      estado: 'pendiente',
+      metodoPago: 'reposicion',
+      tenderoId: ticket.tenderoId,
+      distribuidoraId: ticket.pedido.distribuidoraId,
+      detalles: { create: detallesCrear }
+    }
+  });
+
+  const nuevasNotas = (ticket.notasAdmin ? ticket.notasAdmin + '\n' : '') + `[REPOSICIÓN LOGÍSTICA]: Se creó el sub-pedido #${codigo} con costo $0 para enviar al cliente.`;
+  await prisma.ticketSoporte.update({
+    where: { id: ticketId },
+    data: { notasAdmin: nuevasNotas }
+  });
+
+  res.json({ success: true, pedido: nuevoPedido });
+});
+
 // 2. Abrir / Bloquear un ticket
 app.put('/api/tickets/:id/abrir', authMiddleware, async (req, res) => {
   const ticketId = parseInt(req.params.id);
@@ -1214,20 +1285,31 @@ app.put('/api/tickets/:id/abrir', authMiddleware, async (req, res) => {
 // 3. Marcar como resuelto
 app.put('/api/tickets/:id/estado', authMiddleware, async (req, res) => {
   const ticketId = parseInt(req.params.id);
-  const { estado, notasAdmin } = req.body;
+  const { estado, notasAdmin, respuestaCliente } = req.body;
   const userId = req.user.id;
   
   const user = await prisma.usuario.findUnique({ where: { id: userId } });
   
-  const ticket = await prisma.ticketSoporte.findUnique({ where: { id: ticketId } });
+  const ticket = await prisma.ticketSoporte.findUnique({ 
+    where: { id: ticketId },
+    include: { tendero: true }
+  });
+  
   if (user.rol !== 'administrador' && user.rol !== 'distribuidor' && ticket.atendidoPorId !== userId) {
     return res.status(403).json({ error: 'Solo el asesor a cargo o un administrador puede modificar este ticket' });
   }
 
   const updatedTicket = await prisma.ticketSoporte.update({
     where: { id: ticketId },
-    data: { estado, notasAdmin }
+    data: { estado, notasAdmin, respuestaCliente }
   });
+
+  if (estado === 'resuelto' && ticket.estado !== 'resuelto') {
+    const { notifyTicketResolved } = require('./services/whatsappService');
+    if (notifyTicketResolved && ticket.tendero?.telefono) {
+      await notifyTicketResolved(ticket.id, ticket.tendero.telefono, respuestaCliente || notasAdmin || "Caso cerrado exitosamente.");
+    }
+  }
 
   res.json(updatedTicket);
 });

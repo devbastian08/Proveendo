@@ -133,11 +133,12 @@ model Entrega {
 }
 
 model TicketSoporte {
-  id          Int      @id @default(autoincrement())
-  motivo      String
-  estado      String   @default("abierto") // abierto, en_progreso, resuelto
-  fecha       DateTime @default(now())
-  notasAdmin  String?
+  id               Int      @id @default(autoincrement())
+  motivo           String
+  estado           String   @default("abierto") // abierto, en_progreso, resuelto
+  fecha            DateTime @default(now())
+  notasAdmin       String?
+  respuestaCliente String?
   
   pedidoId    Int?
   pedido      Pedido?  @relation(fields: [pedidoId], references: [id])
