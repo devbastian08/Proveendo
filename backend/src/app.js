@@ -1,3 +1,4 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -5,7 +6,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const rateLimit = require('express-rate-limit');
-const { sendWhatsAppMessage } = require('./services/whatsappService');
+const { sendWhatsAppMessage, handleIncomingMessage } = require('./services/whatsappService');
 
 const prisma = new PrismaClient();
 const app = express();
@@ -609,7 +610,7 @@ app.get('/api/equipo', authMiddleware, async (req, res) => {
 
   const equipo = await prisma.usuario.findMany({
     where: { distribuidoraTrabajoId: distribuidora.id },
-    select: { id: true, nombre: true, correo: true, rol: true, puedeAlistar: true, enRuta: true }
+    select: { id: true, nombre: true, correo: true, rol: true, puedeAlistar: true, enRuta: true, puedeAtenderTickets: true }
   });
   res.json(equipo);
 });
@@ -619,7 +620,7 @@ app.post('/api/equipo', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'No tienes permiso para agregar equipo' });
   }
 
-  const { nombre, correo, contrasena, rol, puedeAlistar } = req.body;
+  const { nombre, correo, contrasena, rol, puedeAlistar, puedeAtenderTickets } = req.body;
   if (!nombre || !correo || !contrasena || !rol) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
@@ -636,9 +637,10 @@ app.post('/api/equipo', authMiddleware, async (req, res) => {
         contrasena: hashed,
         rol,
         puedeAlistar: puedeAlistar || false,
+        puedeAtenderTickets: puedeAtenderTickets || false,
         distribuidoraTrabajoId: distribuidora.id
       },
-      select: { id: true, nombre: true, correo: true, rol: true, puedeAlistar: true }
+      select: { id: true, nombre: true, correo: true, rol: true, puedeAlistar: true, puedeAtenderTickets: true }
     });
     return res.status(201).json(user);
   } catch (error) {
@@ -651,7 +653,7 @@ app.patch('/api/equipo/:id', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'No tienes permiso para modificar equipo' });
   }
 
-  const { puedeAlistar, rol, nombre, correo, contrasena, enRuta } = req.body;
+  const { puedeAlistar, rol, nombre, correo, contrasena, enRuta, puedeAtenderTickets } = req.body;
   const distribuidora = await getMyDistribuidora(req.user.id);
   if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
 
@@ -663,6 +665,7 @@ app.patch('/api/equipo/:id', authMiddleware, async (req, res) => {
 
     const dataToUpdate = {
       puedeAlistar: puedeAlistar !== undefined ? puedeAlistar : existing.puedeAlistar,
+      puedeAtenderTickets: puedeAtenderTickets !== undefined ? puedeAtenderTickets : existing.puedeAtenderTickets,
       enRuta: enRuta !== undefined ? enRuta : existing.enRuta,
       rol: rol || existing.rol,
       nombre: nombre || existing.nombre,
@@ -676,7 +679,7 @@ app.patch('/api/equipo/:id', authMiddleware, async (req, res) => {
     const updated = await prisma.usuario.update({
       where: { id: Number(req.params.id) },
       data: dataToUpdate,
-      select: { id: true, nombre: true, correo: true, rol: true, puedeAlistar: true }
+      select: { id: true, nombre: true, correo: true, rol: true, puedeAlistar: true, puedeAtenderTickets: true }
     });
     return res.json(updated);
   } catch (error) {
@@ -1158,6 +1161,111 @@ app.post('/api/admin/torre-control/ordenar-manual/:conductorId', authMiddleware,
   }
 });
 
+// ==========================================
+// RUTAS DE TICKETS DE SOPORTE
+// ==========================================
+
+// 1. Obtener todos los tickets
+app.get('/api/tickets', authMiddleware, async (req, res) => {
+  const user = await prisma.usuario.findUnique({ where: { id: req.user.id } });
+  
+  if (user.rol !== 'admin' && !user.puedeAtenderTickets) {
+    return res.status(403).json({ error: 'No tienes permiso para acceder a los tickets' });
+  }
+
+  const tickets = await prisma.ticketSoporte.findMany({
+    include: {
+      pedido: { select: { codigo: true, total: true } },
+      tendero: { select: { nombre_tienda: true, telefono: true } },
+      atendidoPor: { select: { id: true, nombre: true } }
+    },
+    orderBy: { fecha: 'desc' }
+  });
+  
+  res.json(tickets);
+});
+
+// 2. Abrir / Bloquear un ticket
+app.put('/api/tickets/:id/abrir', authMiddleware, async (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  const userId = req.user.id;
+  
+  const user = await prisma.usuario.findUnique({ where: { id: userId } });
+  if (user.rol !== 'admin' && !user.puedeAtenderTickets) {
+    return res.status(403).json({ error: 'No tienes permiso para atender tickets' });
+  }
+
+  const ticket = await prisma.ticketSoporte.findUnique({ where: { id: ticketId } });
+  if (!ticket) return res.status(404).json({ error: 'Ticket no encontrado' });
+
+  if (ticket.atendidoPorId && ticket.atendidoPorId !== userId) {
+    return res.status(409).json({ error: 'Este ticket ya está siendo atendido por otro asesor' });
+  }
+
+  const updatedTicket = await prisma.ticketSoporte.update({
+    where: { id: ticketId },
+    data: { atendidoPorId: userId, estado: 'en_progreso' },
+    include: { atendidoPor: { select: { id: true, nombre: true } } }
+  });
+
+  res.json(updatedTicket);
+});
+
+// 3. Marcar como resuelto
+app.put('/api/tickets/:id/estado', authMiddleware, async (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  const { estado, notasAdmin } = req.body;
+  const userId = req.user.id;
+  
+  const user = await prisma.usuario.findUnique({ where: { id: userId } });
+  
+  const ticket = await prisma.ticketSoporte.findUnique({ where: { id: ticketId } });
+  if (user.rol !== 'admin' && ticket.atendidoPorId !== userId) {
+    return res.status(403).json({ error: 'Solo el asesor a cargo o un administrador puede modificar este ticket' });
+  }
+
+  const updatedTicket = await prisma.ticketSoporte.update({
+    where: { id: ticketId },
+    data: { estado, notasAdmin }
+  });
+
+  res.json(updatedTicket);
+});
+
+// 4. Asignar permiso de tickets a un usuario (Solo Admin)
+app.put('/api/usuarios/:id/permisos-tickets', authMiddleware, async (req, res) => {
+  const targetUserId = parseInt(req.params.id);
+  const { puedeAtenderTickets } = req.body;
+  
+  const adminUser = await prisma.usuario.findUnique({ where: { id: req.user.id } });
+  if (adminUser.rol !== 'admin') {
+    return res.status(403).json({ error: 'Solo un administrador puede asignar permisos' });
+  }
+
+  const updated = await prisma.usuario.update({
+    where: { id: targetUserId },
+    data: { puedeAtenderTickets }
+  });
+
+  res.json({ success: true, puedeAtenderTickets: updated.puedeAtenderTickets });
+});
+
+
+// ==========================================
+// WEBHOOK DE WHATSAPP (Green API)
+// ==========================================
+app.post('/api/webhook/whatsapp', (req, res) => {
+  // 1. Responder INMEDIATAMENTE con 200 OK
+  // Esto libera a Green API y evita que el webhook se trabe o repita el envío.
+  res.status(200).send('OK');
+
+  // 2. Procesar en el "fondo" (sin await)
+  const webhookBody = req.body;
+  if (webhookBody && webhookBody.typeWebhook === 'incomingMessageReceived') {
+    handleIncomingMessage(webhookBody, prisma)
+      .catch(err => console.error("Error procesando mensaje de WhatsApp en background:", err));
+  }
+});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

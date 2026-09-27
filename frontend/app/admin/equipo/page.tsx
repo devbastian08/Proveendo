@@ -9,6 +9,7 @@ interface Miembro {
   correo: string;
   rol: string;
   puedeAlistar: boolean;
+  puedeAtenderTickets?: boolean;
   enRuta?: boolean;
 }
 
@@ -23,6 +24,7 @@ export default function EquipoPage() {
   const [contrasena, setContrasena] = useState('');
   const [rol, setRol] = useState('asesor'); // Por defecto creamos asesores
   const [puedeAlistar, setPuedeAlistar] = useState(false);
+  const [puedeAtenderTickets, setPuedeAtenderTickets] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   
   const [motivoReactivacion, setMotivoReactivacion] = useState('');
@@ -62,7 +64,7 @@ export default function EquipoPage() {
       const url = editingId ? `${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`}/api/equipo/${editingId}` : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/equipo`;
       const method = editingId ? 'PATCH' : 'POST';
       
-      const payload: any = { nombre, correo, rol, puedeAlistar };
+      const payload: any = { nombre, correo, rol, puedeAlistar, puedeAtenderTickets };
       if (contrasena) payload.contrasena = contrasena;
 
       const res = await fetch(url, {
@@ -85,6 +87,7 @@ export default function EquipoPage() {
       setCorreo('');
       setContrasena('');
       setPuedeAlistar(false);
+      setPuedeAtenderTickets(false);
       fetchEquipo(); // Refrescar lista
       
     } catch (err: any) {
@@ -224,6 +227,7 @@ export default function EquipoPage() {
                           setCorreo(miembro.correo);
                           setRol(miembro.rol);
                           setPuedeAlistar(miembro.puedeAlistar || false);
+                          setPuedeAtenderTickets(miembro.puedeAtenderTickets || false);
                           setContrasena('');
                           setIsModalOpen(true);
                         }}
@@ -244,7 +248,7 @@ export default function EquipoPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => { setIsModalOpen(false); setEditingId(null); setNombre(''); setCorreo(''); setContrasena(''); }}></div>
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => { setIsModalOpen(false); setEditingId(null); setNombre(''); setCorreo(''); setContrasena(''); setPuedeAlistar(false); setPuedeAtenderTickets(false); }}></div>
           <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
               <UserPlus className="w-6 h-6 text-[#4a6c6f]" />
@@ -301,18 +305,33 @@ export default function EquipoPage() {
               </div>
 
               {rol === 'asesor' && (
-                <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-100 dark:bg-slate-800 transition-colors">
-                  <input 
-                    type="checkbox" 
-                    checked={puedeAlistar}
-                    onChange={(e) => setPuedeAlistar(e.target.checked)}
-                    className="w-5 h-5 rounded text-[#4a6c6f] focus:ring-[#4a6c6f] border-slate-300 dark:border-slate-600"
-                  />
-                  <div>
-                    <div className="text-sm font-bold text-slate-800 dark:text-slate-100">Permitir Alistamiento (Bodega)</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">Este asesor podrá ver y cambiar el estado de los pedidos.</div>
-                  </div>
-                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-100 dark:bg-slate-800 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={puedeAlistar}
+                      onChange={(e) => setPuedeAlistar(e.target.checked)}
+                      className="w-5 h-5 rounded text-[#4a6c6f] focus:ring-[#4a6c6f] border-slate-300 dark:border-slate-600"
+                    />
+                    <div>
+                      <div className="text-sm font-bold text-slate-800 dark:text-slate-100">Permitir Alistamiento (Bodega)</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">Este asesor podrá ver y cambiar el estado de los pedidos.</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-100 dark:bg-slate-800 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={puedeAtenderTickets}
+                      onChange={(e) => setPuedeAtenderTickets(e.target.checked)}
+                      className="w-5 h-5 rounded text-[#4a6c6f] focus:ring-[#4a6c6f] border-slate-300 dark:border-slate-600"
+                    />
+                    <div>
+                      <div className="text-sm font-bold text-slate-800 dark:text-slate-100">Acceso a Tickets</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">Permitir a este asesor ver y responder tickets de soporte.</div>
+                    </div>
+                  </label>
+                </div>
               )}
 
               {error && (
@@ -325,7 +344,7 @@ export default function EquipoPage() {
               <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => { setIsModalOpen(false); setEditingId(null); setNombre(''); setCorreo(''); setContrasena(''); }}
+                  onClick={() => { setIsModalOpen(false); setEditingId(null); setNombre(''); setCorreo(''); setContrasena(''); setPuedeAlistar(false); setPuedeAtenderTickets(false); }}
                   className="px-4 py-2 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-50 dark:bg-slate-950 rounded-lg"
                 >
                   Cancelar

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Package, ShoppingCart, LogOut, Menu, X, Users, Store, Navigation } from 'lucide-react';
+import { Package, ShoppingCart, LogOut, Menu, X, Users, Store, Navigation, LifeBuoy } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -58,6 +58,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       roles: ['administrador', 'distribuidor']
     },
     {
+      title: 'Soporte y Reclamos',
+      icon: <LifeBuoy className="w-5 h-5" />,
+      href: '/admin/tickets',
+      roles: ['administrador', 'distribuidor', 'asesor']
+    },
+    {
       title: 'Clientes (Pronto)',
       icon: <Users className="w-5 h-5" />,
       href: '#', 
@@ -77,8 +83,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   ];
 
-  // Filtramos el menú según el rol del usuario actual
-  const visibleMenuItems = menuItems.filter(item => item.roles.includes(user.rol));
+  // Filtramos el menú según el rol del usuario actual y permisos especiales
+  const visibleMenuItems = menuItems.filter(item => {
+    // Si es asesor, ocultamos la pestaña de tickets si no tiene el permiso puedeAtenderTickets
+    if (item.href === '/admin/tickets' && user.rol === 'asesor' && !user.puedeAtenderTickets) {
+      return false;
+    }
+    return item.roles.includes(user.rol);
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">

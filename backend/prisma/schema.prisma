@@ -17,6 +17,7 @@ model Usuario {
   contrasena             String
   rol                    String         // Ej: "distribuidor", "admin", "asesor"
   puedeAlistar           Boolean        @default(false)
+  puedeAtenderTickets    Boolean        @default(false)
   enRuta                 Boolean        @default(false)
   latitud                Float?         // Para tracking GPS de conductores
   longitud               Float?
@@ -30,6 +31,7 @@ model Usuario {
   
   tendero                Tendero?
   entregas               Entrega[]
+  ticketsAtendidos       TicketSoporte[] @relation("TicketsAtendidos")
 }
 
 model Distribuidora {
@@ -70,6 +72,7 @@ model Tendero {
   usuarioId     Int?     @unique
   usuario       Usuario? @relation(fields: [usuarioId], references: [id])
   pedidos       Pedido[]
+  tickets       TicketSoporte[]
 }
 
 model Producto {
@@ -99,6 +102,7 @@ model Pedido {
   
   detalles        DetallePedido[]
   entrega         Entrega?
+  tickets         TicketSoporte[]
   
   // Datos del cliente si hace checkout sin estar registrado como Tendero formal
   nombreCliente   String?
@@ -126,4 +130,21 @@ model Entrega {
   orden       Int      @default(0)
   pedido      Pedido   @relation(fields: [pedidoId], references: [id])
   conductor   Usuario? @relation(fields: [conductorId], references: [id])
+}
+
+model TicketSoporte {
+  id          Int      @id @default(autoincrement())
+  motivo      String
+  estado      String   @default("abierto") // abierto, en_progreso, resuelto
+  fecha       DateTime @default(now())
+  notasAdmin  String?
+  
+  pedidoId    Int?
+  pedido      Pedido?  @relation(fields: [pedidoId], references: [id])
+  
+  tenderoId   Int
+  tendero     Tendero  @relation(fields: [tenderoId], references: [id])
+
+  atendidoPorId Int?
+  atendidoPor   Usuario? @relation("TicketsAtendidos", fields: [atendidoPorId], references: [id])
 }
