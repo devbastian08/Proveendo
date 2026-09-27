@@ -11,6 +11,7 @@ interface Ticket {
   fecha: string;
   notasAdmin: string | null;
   atendidoPorId: number | null;
+  pedidoId?: number | null;
   pedido: { codigo: string | null, total: number } | null;
   tendero: { nombre_tienda: string, telefono: string };
   atendidoPor: { id: number, nombre: string } | null;
