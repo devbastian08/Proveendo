@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Inbox, Lock, MessageSquare, CheckCircle, Clock, Plus, Minus, PackagePlus } from 'lucide-react';
+import { Loader2, Inbox, Lock, MessageSquare, CheckCircle, Clock, Plus, Minus, PackagePlus, Send, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Ticket {
@@ -139,10 +139,33 @@ export default function TicketsPage() {
       if (!res.ok) throw new Error(data.error);
       
       toast.success(nuevoEstado === 'resuelto' ? 'Ticket marcado como resuelto y cliente notificado' : 'Notas guardadas correctamente');
-      setIsModalOpen(false);
+      if (nuevoEstado === 'resuelto') {
+        setIsModalOpen(false);
+      }
       fetchTickets();
     } catch (err: any) {
       toast.error(err.message || 'Error al guardar');
+    } finally {
+      setSavingStatus(false);
+    }
+  };
+
+  const handleLiberar = async () => {
+    if (!selectedTicket) return;
+    setSavingStatus(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tickets/${selectedTicket.id}/estado`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ estado: 'abierto', notasAdmin: notas, respuestaCliente, liberar: true })
+      });
+      if (!res.ok) throw new Error('Error al liberar');
+      toast.success('Ticket devuelto a la bandeja compartida');
+      setIsModalOpen(false);
+      fetchTickets();
+    } catch(err: any) {
+      toast.error(err.message || 'Error al liberar');
     } finally {
       setSavingStatus(false);
     }
@@ -319,6 +342,12 @@ export default function TicketsPage() {
                 </h2>
                 <p className="text-slate-500 text-sm mt-1">{new Date(selectedTicket.fecha).toLocaleString()}</p>
               </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500 dark:text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
@@ -430,25 +459,26 @@ export default function TicketsPage() {
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-100 dark:border-slate-800 mt-2">
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="flex-1 px-4 py-2.5 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:bg-slate-800 rounded-xl transition-colors border border-slate-200 dark:border-slate-700"
+                disabled={savingStatus}
+                onClick={handleLiberar}
+                className="flex-1 px-4 py-3 text-slate-500 dark:text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 flex items-center justify-center gap-2"
               >
-                Cerrar Modal
+                Liberar Ticket
               </button>
               <button
                 disabled={savingStatus}
                 onClick={() => handleSaveStatus('en_progreso')}
-                className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-700 dark:hover:bg-slate-600 font-bold rounded-xl transition-colors disabled:opacity-70"
+                className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 font-bold rounded-xl transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
               >
                 Guardar Avance
               </button>
               <button
                 disabled={savingStatus}
                 onClick={() => handleSaveStatus('resuelto')}
-                className="flex-1 px-4 py-2.5 bg-[#4a6c6f] hover:bg-[#3a5658] text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                className="flex-[2] px-4 py-3 bg-[#25D366] hover:bg-[#128C7E] text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-[#25D366]/20 disabled:opacity-70 text-lg"
               >
-                {savingStatus ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
-                Marcar Resuelto
+                {savingStatus ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
+                Resolver y Notificar
               </button>
             </div>
             

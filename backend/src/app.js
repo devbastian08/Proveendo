@@ -1276,7 +1276,11 @@ app.put('/api/tickets/:id/abrir', authMiddleware, async (req, res) => {
   const updatedTicket = await prisma.ticketSoporte.update({
     where: { id: ticketId },
     data: { atendidoPorId: userId, estado: 'en_progreso' },
-    include: { atendidoPor: { select: { id: true, nombre: true } } }
+    include: { 
+      atendidoPor: { select: { id: true, nombre: true } },
+      pedido: { select: { codigo: true, total: true } },
+      tendero: { select: { nombre_tienda: true, telefono: true } }
+    }
   });
 
   res.json(updatedTicket);
@@ -1285,7 +1289,7 @@ app.put('/api/tickets/:id/abrir', authMiddleware, async (req, res) => {
 // 3. Marcar como resuelto
 app.put('/api/tickets/:id/estado', authMiddleware, async (req, res) => {
   const ticketId = parseInt(req.params.id);
-  const { estado, notasAdmin, respuestaCliente } = req.body;
+  const { estado, notasAdmin, respuestaCliente, liberar } = req.body;
   const userId = req.user.id;
   
   const user = await prisma.usuario.findUnique({ where: { id: userId } });
@@ -1299,12 +1303,19 @@ app.put('/api/tickets/:id/estado', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'Solo el asesor a cargo o un administrador puede modificar este ticket' });
   }
 
+  let updateData = { estado, notasAdmin, respuestaCliente };
+  
+  if (liberar) {
+    updateData.atendidoPorId = null;
+    updateData.estado = 'abierto';
+  }
+
   const updatedTicket = await prisma.ticketSoporte.update({
     where: { id: ticketId },
-    data: { estado, notasAdmin, respuestaCliente }
+    data: updateData
   });
 
-  if (estado === 'resuelto' && ticket.estado !== 'resuelto') {
+  if (estado === 'resuelto' && ticket.estado !== 'resuelto' && !liberar) {
     const { notifyTicketResolved } = require('./services/whatsappService');
     if (notifyTicketResolved && ticket.tendero?.telefono) {
       await notifyTicketResolved(ticket.id, ticket.tendero.telefono, respuestaCliente || notasAdmin || "Caso cerrado exitosamente.");
