@@ -1169,7 +1169,7 @@ app.post('/api/admin/torre-control/ordenar-manual/:conductorId', authMiddleware,
 app.get('/api/tickets', authMiddleware, async (req, res) => {
   const user = await prisma.usuario.findUnique({ where: { id: req.user.id } });
   
-  if (user.rol !== 'admin' && !user.puedeAtenderTickets) {
+  if (user.rol !== 'administrador' && user.rol !== 'distribuidor' && !user.puedeAtenderTickets) {
     return res.status(403).json({ error: 'No tienes permiso para acceder a los tickets' });
   }
 
@@ -1191,7 +1191,7 @@ app.put('/api/tickets/:id/abrir', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   
   const user = await prisma.usuario.findUnique({ where: { id: userId } });
-  if (user.rol !== 'admin' && !user.puedeAtenderTickets) {
+  if (user.rol !== 'administrador' && user.rol !== 'distribuidor' && !user.puedeAtenderTickets) {
     return res.status(403).json({ error: 'No tienes permiso para atender tickets' });
   }
 
@@ -1220,7 +1220,7 @@ app.put('/api/tickets/:id/estado', authMiddleware, async (req, res) => {
   const user = await prisma.usuario.findUnique({ where: { id: userId } });
   
   const ticket = await prisma.ticketSoporte.findUnique({ where: { id: ticketId } });
-  if (user.rol !== 'admin' && ticket.atendidoPorId !== userId) {
+  if (user.rol !== 'administrador' && user.rol !== 'distribuidor' && ticket.atendidoPorId !== userId) {
     return res.status(403).json({ error: 'Solo el asesor a cargo o un administrador puede modificar este ticket' });
   }
 
@@ -1238,7 +1238,7 @@ app.put('/api/usuarios/:id/permisos-tickets', authMiddleware, async (req, res) =
   const { puedeAtenderTickets } = req.body;
   
   const adminUser = await prisma.usuario.findUnique({ where: { id: req.user.id } });
-  if (adminUser.rol !== 'admin') {
+  if (adminUser.rol !== 'administrador' && adminUser.rol !== 'distribuidor') {
     return res.status(403).json({ error: 'Solo un administrador puede asignar permisos' });
   }
 
