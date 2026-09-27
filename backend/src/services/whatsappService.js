@@ -97,7 +97,8 @@ const handleIncomingMessage = async (webhookData, prisma) => {
     if (currentState) {
       if (currentState.step === 'AWAITING_OLD_NUMBER') {
         const oldPhone = textReceived.replace(/[^0-9]/g, '');
-        const user = await prisma.tendero.findFirst({ where: { telefono: oldPhone } });
+        const cleanOld = oldPhone.replace(/\D/g, '').slice(-10);
+        const user = await prisma.tendero.findFirst({ where: { telefono: { contains: cleanOld } } });
         
         if (user) {
           await prisma.tendero.update({ where: { id: user.id }, data: { telefono: senderPhone } });
@@ -112,7 +113,7 @@ const handleIncomingMessage = async (webhookData, prisma) => {
 
       if (currentState.step === 'AWAITING_ORDER_SELECTION') {
         const selectedIndex = parseInt(textReceived) - 1;
-        const user = await prisma.tendero.findFirst({ where: { telefono: senderPhone } });
+        const user = await prisma.tendero.findFirst({ where: { telefono: { contains: senderPhone.slice(-10) } } });
         
         if (textReceived === "4") {
            chatStates.set(senderPhone, { step: 'AWAITING_GENERAL_QUERY', timestamp: Date.now() });
@@ -132,7 +133,7 @@ const handleIncomingMessage = async (webhookData, prisma) => {
         if (!["1", "2", "3", "4"].includes(textReceived)) {
           return sendWhatsAppMessage(senderPhone, "❌ Opción no válida. Por favor, responde únicamente con un número del 1 al 4 para indicar tu inconveniente.");
         }
-        const user = await prisma.tendero.findFirst({ where: { telefono: senderPhone } });
+        const user = await prisma.tendero.findFirst({ where: { telefono: { contains: senderPhone.slice(-10) } } });
         let motivo = "Otro problema";
         if (textReceived === "1") motivo = "Producto dañado o vencido";
         if (textReceived === "2") motivo = "Faltaron productos";
@@ -152,7 +153,7 @@ const handleIncomingMessage = async (webhookData, prisma) => {
       }
 
       if (currentState.step === 'AWAITING_GENERAL_QUERY') {
-        const user = await prisma.tendero.findFirst({ where: { telefono: senderPhone } });
+        const user = await prisma.tendero.findFirst({ where: { telefono: { contains: senderPhone.slice(-10) } } });
         const newTicket = await prisma.ticketSoporte.create({
           data: { motivo: textReceived, tenderoId: user.id }
         });
@@ -188,7 +189,7 @@ const handleIncomingMessage = async (webhookData, prisma) => {
     }
 
     // 2. Comportamiento normal (Buscar usuario actual si no hay estado activo)
-    const user = await prisma.tendero.findFirst({ where: { telefono: senderPhone } });
+    const user = await prisma.tendero.findFirst({ where: { telefono: { contains: senderPhone.slice(-10) } } });
 
     if (!user) {
       if (textReceived === "1") {

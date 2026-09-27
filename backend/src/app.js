@@ -891,8 +891,9 @@ app.post('/api/pedidos', async (req, res) => {
       );
     }
 
+    const cleanPhone = telefonoCliente.replace(/\D/g, '');
     let tendero = await prisma.tendero.findFirst({
-      where: { telefono: telefonoCliente }
+      where: { telefono: { contains: cleanPhone.slice(-10) } }
     });
 
     if (!tendero) {
