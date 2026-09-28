@@ -1,4 +1,5 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+require('./sentry.js'); // Sentry debe inicializarse antes que express y cualquier otra librería
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -1442,6 +1443,9 @@ app.post('/api/webhook/whatsapp', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
+const Sentry = require("@sentry/node");
+Sentry.setupExpressErrorHandler(app);
+
 app.use((err, req, res, next) => {
   console.error('Express Error:', err);
   res.status(500).json({ error: 'Internal Server Error', message: err.message, stack: err.stack });
