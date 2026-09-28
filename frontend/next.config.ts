@@ -11,11 +11,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-import { withSentryConfig } from "@sentry/nextjs";
-
-export default withSentryConfig(nextConfig, {
-  // Configuración para subir source maps a Sentry de manera silenciosa
-  silent: true,
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-});
+export default nextConfig;
