@@ -8,7 +8,6 @@ const { PrismaClient } = require('@prisma/client');
 const rateLimit = require('express-rate-limit');
 const NodeCache = require('node-cache');
 const helmet = require('helmet');
-const xss = require('xss-clean');
 const cookieParser = require('cookie-parser');
 const { sendWhatsAppMessage, handleIncomingMessage } = require('./services/whatsappService');
 
@@ -40,7 +39,6 @@ app.use(cors({ origin: true, credentials: true })); // origin:true refleja el or
 app.use(cookieParser());
 app.use(morgan('dev'));
 app.use(express.json());
-app.use(xss()); // Filtra y elimina cualquier intento de inyección XSS (ej: etiquetas <script>) en body, params o query
 
 // ----------------------------------------------------
 // SISTEMA DE RATE LIMITING (SEGURIDAD)
@@ -1444,6 +1442,11 @@ app.post('/api/webhook/whatsapp', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
+app.use((err, req, res, next) => {
+  console.error('Express Error:', err);
+  res.status(500).json({ error: 'Internal Server Error', message: err.message, stack: err.stack });
+});
+
 app.listen(PORT, () => {
   console.log(`ProvEEndo backend running on http://localhost:${PORT}`);
 });
