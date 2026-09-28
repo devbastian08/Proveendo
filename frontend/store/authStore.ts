@@ -14,14 +14,17 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       login: (user, token) => {
-        // Mantenemos la copia en localStorage normal por compatibilidad con otras páginas que aún no usan Zustand
-        // Idealmente en el futuro todo usará Zustand.
-        localStorage.setItem('token', token);
+        // La sesión (token) se maneja silenciosamente por cookies httpOnly del backend.
+        // Solo guardamos datos públicos del usuario en memoria y localStorage.
         localStorage.setItem('user', JSON.stringify(user));
         set({ user, token });
       },
       logout: () => {
-        localStorage.removeItem('token');
+        // Hacemos petición al backend para destruir la cookie segura
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/logout`, { method: 'POST' })
+          .catch(err => console.error('Error logout:', err));
+          
+        localStorage.removeItem('token'); // Limpiamos por si quedaban rastros de la arquitectura vieja
         localStorage.removeItem('user');
         set({ user: null, token: null });
       },

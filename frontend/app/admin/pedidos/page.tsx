@@ -1,7 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import useSWR from 'swr';
 import { useRouter } from 'next/navigation';
+
+const fetcher = async (url: string) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Error al cargar datos');
+  }
+  return res.json();
+};
 import { Loader2, Truck, CheckCircle, Package, Clock, Eye, X, User as UserIcon, Phone, MapPin, RefreshCw, ArrowLeft, AlertCircle, Printer, TrendingUp, DollarSign } from 'lucide-react';
 
 interface DetallePedido {
@@ -39,12 +50,28 @@ interface Pedido {
 
 export default function PedidosPage() {
   const router = useRouter();
-  const [pedidos, setPedidos] = useState<Pedido[]>([]);
-  const [equipo, setEquipo] = useState<Usuario[]>([]);
-  const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [filtroTab, setFiltroTab] = useState<'activos' | 'historial'>('activos');
   const [userRole, setUserRole] = useState<string>('');
+  
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserRole(user.rol || '');
+  }, []);
+
+  const { data: pedidosData, isLoading: loadingPedidos, mutate: mutatePedidos } = useSWR<Pedido[]>(
+    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/pedidos`,
+    fetcher
+  );
+
+  const { data: equipoData } = useSWR<Usuario[]>(
+    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/equipo`,
+    fetcher
+  );
+
+  const pedidos = Array.isArray(pedidosData) ? pedidosData : [];
+  const equipo = Array.isArray(equipoData) ? equipoData.filter(u => u.rol === 'conductor') : [];
+  const loading = loadingPedidos;
   
   // Modales
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
@@ -54,38 +81,7 @@ export default function PedidosPage() {
   const [overrideEstado, setOverrideEstado] = useState('');
   const [alertModal, setAlertModal] = useState<{title: string, message: string, isError: boolean} | null>(null);
 
-  const fetchData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      setUserRole(user.rol || '');
-      
-      // Fetch Pedidos
-      const resPedidos = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/pedidos`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const dataPedidos = await resPedidos.json();
-      setPedidos(Array.isArray(dataPedidos) ? dataPedidos : []);
 
-      // Fetch Equipo (para asignar conductores)
-      const resEquipo = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/equipo`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const dataEquipo = await resEquipo.json();
-      if (Array.isArray(dataEquipo)) {
-        setEquipo(dataEquipo.filter(u => u.rol === 'conductor'));
-      }
-
-    } catch (err) {
-      console.error('Error fetching data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const changeStatus = async (id: number, nuevoEstado: string, motivo?: string) => {
     setActionLoadingId(id);
@@ -105,7 +101,7 @@ export default function PedidosPage() {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
-        fetchData();
+        mutatePedidos();
         setSelectedPedido(null);
         setSelectedReactivarId(null);
         setMotivoReactivacion('');
@@ -134,7 +130,7 @@ export default function PedidosPage() {
         body: JSON.stringify({ conductorId: Number(selectedConductorId) })
       });
       if (res.ok) {
-        fetchData();
+        mutatePedidos();
         setSelectedPedido(null);
       } else {
         const errorData = await res.json();

@@ -32,6 +32,8 @@ model Usuario {
   tendero                Tendero?
   entregas               Entrega[]
   ticketsAtendidos       TicketSoporte[] @relation("TicketsAtendidos")
+
+  @@index([distribuidoraTrabajoId])
 }
 
 model Distribuidora {
@@ -73,6 +75,8 @@ model Tendero {
   usuario       Usuario? @relation(fields: [usuarioId], references: [id])
   pedidos       Pedido[]
   tickets       TicketSoporte[]
+
+  @@index([telefono])
 }
 
 model Producto {
@@ -85,6 +89,8 @@ model Producto {
   distribuidoraId  Int
   distribuidora    Distribuidora   @relation(fields: [distribuidoraId], references: [id])
   detallesPedido   DetallePedido[]
+
+  @@index([distribuidoraId])
 }
 
 model Pedido {
@@ -110,6 +116,12 @@ model Pedido {
   direccionEnvio  String?
   latitud         Float?
   longitud        Float?
+
+  @@index([distribuidoraId])
+  @@index([tenderoId])
+  @@index([estado])
+  @@index([fecha])
+  @@index([telefonoCliente])
 }
 
 model DetallePedido {
@@ -120,6 +132,9 @@ model DetallePedido {
   subtotal   Float
   pedido     Pedido   @relation(fields: [pedidoId], references: [id])
   producto   Producto @relation(fields: [productoId], references: [id])
+
+  @@index([pedidoId])
+  @@index([productoId])
 }
 
 model Entrega {
@@ -130,6 +145,8 @@ model Entrega {
   orden       Int      @default(0)
   pedido      Pedido   @relation(fields: [pedidoId], references: [id])
   conductor   Usuario? @relation(fields: [conductorId], references: [id])
+
+  @@index([conductorId, estado])
 }
 
 model TicketSoporte {
@@ -148,4 +165,8 @@ model TicketSoporte {
 
   atendidoPorId Int?
   atendidoPor   Usuario? @relation("TicketsAtendidos", fields: [atendidoPorId], references: [id])
+
+  @@index([tenderoId])
+  @@index([pedidoId])
+  @@index([estado])
 }

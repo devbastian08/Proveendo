@@ -491,6 +491,12 @@ export default function TiendaClient({
                           placeholder="Ej: Calle 8 # 14-22, Casa verde de dos pisos"
                         />
                       </div>
+                      <div className="flex items-start gap-2 mt-4">
+                        <input required type="checkbox" id="consent_checkout" className="mt-1 accent-[#4a6c6f]" />
+                        <label htmlFor="consent_checkout" className="text-xs text-slate-500 dark:text-slate-400">
+                          Acepto la <a href="/privacidad" target="_blank" className="underline text-blue-500">Política de Privacidad</a> y los <a href="/terminos" target="_blank" className="underline text-blue-500">Términos y Condiciones</a>, y consiento el procesamiento de mis datos para esta entrega.
+                        </label>
+                      </div>
                       
                       <button 
                         type="submit" 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import useSWR from 'swr';
 import { Loader2, Inbox, Lock, MessageSquare, CheckCircle, Clock, Plus, Minus, PackagePlus, Send, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,14 +25,21 @@ interface Producto {
   stock: number;
 }
 
+const fetcher = async (url: string) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Error al cargar datos');
+  }
+  return res.json();
+};
+
 export default function TicketsPage() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   
   // Productos y Reposición
-  const [productos, setProductos] = useState<Producto[]>([]);
   const [showReposicionUI, setShowReposicionUI] = useState(false);
   const [reposicionCart, setReposicionCart] = useState<{id: number, cantidad: number}[]>([]);
   const [creatingReposicion, setCreatingReposicion] = useState(false);
@@ -45,39 +53,21 @@ export default function TicketsPage() {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) setUser(JSON.parse(storedUser));
-    fetchTickets();
-    fetchProductos();
   }, []);
 
-  const fetchTickets = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tickets`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setTickets(Array.isArray(data) ? data : []);
-      } else {
-        toast.error(data.error || 'Error al cargar tickets');
-      }
-    } catch (err) {
-      toast.error('Error de conexión');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: ticketsData, isLoading: loadingTickets, mutate: mutateTickets } = useSWR<Ticket[]>(
+    user ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tickets` : null,
+    fetcher
+  );
 
-  const fetchProductos = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/productos`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) setProductos(data);
-    } catch (err) {}
-  };
+  const { data: productosData } = useSWR<Producto[]>(
+    user ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/productos` : null,
+    fetcher
+  );
+
+  const tickets = Array.isArray(ticketsData) ? ticketsData : [];
+  const productos = Array.isArray(productosData) ? productosData : [];
+  const loading = !user || loadingTickets;
 
   const handleOpenTicket = async (ticket: Ticket) => {
     if (ticket.atendidoPorId && ticket.atendidoPorId !== user?.id) {
@@ -100,7 +90,7 @@ export default function TicketsPage() {
       toast.promise(promise, {
         loading: 'Abriendo ticket...',
         success: (updatedTicket) => {
-          setTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
+          mutateTickets((prev) => prev ? prev.map(t => t.id === updatedTicket.id ? updatedTicket : t) : [], { revalidate: false });
           openModal(updatedTicket);
           return `¡Ticket bloqueado a tu nombre!`;
         },
@@ -142,7 +132,7 @@ export default function TicketsPage() {
       if (nuevoEstado === 'resuelto') {
         setIsModalOpen(false);
       }
-      fetchTickets();
+      mutateTickets();
     } catch (err: any) {
       toast.error(err.message || 'Error al guardar');
     } finally {
@@ -163,7 +153,7 @@ export default function TicketsPage() {
       if (!res.ok) throw new Error('Error al liberar');
       toast.success('Ticket devuelto a la bandeja compartida');
       setIsModalOpen(false);
-      fetchTickets();
+      mutateTickets();
     } catch(err: any) {
       toast.error(err.message || 'Error al liberar');
     } finally {
@@ -228,7 +218,7 @@ export default function TicketsPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Bandeja de Tickets</h1>
           <p className="text-slate-500 dark:text-slate-400">Atiende los reclamos y solicitudes de tus clientes.</p>
         </div>
-        <button onClick={fetchTickets} className="text-sm px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors">
+        <button onClick={() => mutateTickets()} className="text-sm px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors">
           Actualizar Buzón
         </button>
       </div>

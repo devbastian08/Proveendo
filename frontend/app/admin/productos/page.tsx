@@ -1,7 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import useSWR from 'swr';
 import { PackagePlus, Loader2, AlertCircle, Image as ImageIcon, UploadCloud, Trash2, Pencil } from 'lucide-react';
+
+const fetcher = async (url: string) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Error al cargar datos');
+  }
+  return res.json();
+};
 
 interface Producto {
   id: number;
@@ -14,8 +25,11 @@ interface Producto {
 }
 
 export default function ProductosPage() {
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: productosData, isLoading: loading, mutate: mutateProductos } = useSWR<Producto[]>(
+    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/productos`,
+    fetcher
+  );
+  const productos = Array.isArray(productosData) ? productosData : [];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
 
@@ -34,27 +48,7 @@ export default function ProductosPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alertModal, setAlertModal] = useState<{title: string, message: string, isError: boolean} | null>(null);
 
-  const fetchProductos = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/productos`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
-      setProductos(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Error fetching productos:', err);
-      setProductos([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    fetchProductos();
-  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -167,7 +161,7 @@ export default function ProductosPage() {
 
       // Limpiar form, cerrar modal y refrescar
       setIsModalOpen(false);
-      fetchProductos();
+      mutateProductos();
 
     } catch (err: any) {
       setError(err.message);
@@ -187,7 +181,7 @@ export default function ProductosPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al eliminar');
-      fetchProductos();
+      mutateProductos();
     } catch (err: any) {
       setAlertModal({ title: "Error al eliminar", message: err.message || "Ocurrió un error al intentar eliminar el producto.", isError: true });
     } finally {

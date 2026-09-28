@@ -98,6 +98,13 @@ export default function LoginPage() {
               </div>
             </div>
 
+            <div className="flex items-start gap-2">
+              <input required type="checkbox" id="consent_login" className="mt-1 accent-[#4a6c6f]" />
+              <label htmlFor="consent_login" className="text-xs text-slate-500 dark:text-slate-400">
+                Al iniciar sesión, aceptas nuestra <a href="/privacidad" target="_blank" className="underline text-blue-500">Política de Privacidad</a>, <a href="/terminos" target="_blank" className="underline text-blue-500">Términos y Condiciones</a>, y el uso de <a href="/cookies" target="_blank" className="underline text-blue-500">Cookies</a>.
+              </label>
+            </div>
+
             {error && (
               <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center">
                 {error}

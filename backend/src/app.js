@@ -6,20 +6,87 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const rateLimit = require('express-rate-limit');
+const NodeCache = require('node-cache');
+const helmet = require('helmet');
+const xss = require('xss-clean');
+const cookieParser = require('cookie-parser');
 const { sendWhatsAppMessage, handleIncomingMessage } = require('./services/whatsappService');
 
 const prisma = new PrismaClient();
 const app = express();
-app.use(cors());
+const apiCache = new NodeCache({ stdTTL: 15 });
+
+// Middleware de caché genérico para proteger la BD de múltiples cargas
+const cacheMiddleware = (duration) => {
+  return (req, res, next) => {
+    if (req.method !== 'GET') return next();
+    // Clave única por URL y por usuario (para no mezclar data de distribuidores)
+    const key = `__cache__${req.originalUrl || req.url}__${req.user ? req.user.id : 'anon'}`;
+    const cachedResponse = apiCache.get(key);
+    if (cachedResponse) {
+      return res.send(cachedResponse);
+    } else {
+      res.sendResponse = res.send;
+      res.send = (body) => {
+        apiCache.set(key, body, duration);
+        res.sendResponse(body);
+      };
+      next();
+    }
+  };
+};
+app.use(helmet()); // Bloquea ataques de headers y añade escudos base
+app.use(cors({ origin: true, credentials: true })); // origin:true refleja el origen de la petición
+app.use(cookieParser());
 app.use(morgan('dev'));
 app.use(express.json());
+app.use(xss()); // Filtra y elimina cualquier intento de inyección XSS (ej: etiquetas <script>) en body, params o query
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecreto123';
+// ----------------------------------------------------
+// SISTEMA DE RATE LIMITING (SEGURIDAD)
+// ----------------------------------------------------
+
+// 1. Escudo Global: 300 peticiones por IP cada 15 minutos para toda la API
+const globalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  message: { error: 'Has excedido el límite de peticiones globales permitidas. Por favor, intenta de nuevo en 15 minutos.' }
+});
+app.use('/api/', globalApiLimiter);
+
+// 2. Escudo Público: 100 peticiones por IP cada 15 min para el catálogo (evita bots extractores)
+const publicTiendasLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Has excedido el límite de navegación de tiendas. Por favor, intenta más tarde.' }
+});
+app.use('/api/tiendas', publicTiendasLimiter);
+
+// 3. Escudo de Registro: 3 creaciones de cuenta por IP cada 15 minutos (evita spam de bots)
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: { error: 'Demasiadas cuentas creadas desde esta IP. Por favor, intenta más tarde.' }
+});
+
+if (!process.env.JWT_SECRET) {
+  console.error('CRITICAL ERROR: JWT_SECRET environment variable is not set.');
+  process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const ORDER_STATUSES = ['pendiente', 'en_preparacion', 'preparado', 'en_ruta', 'entregado'];
 
 // Middleware de autenticación
 const authMiddleware = async (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
+  let token = req.cookies?.token;
+  
+  if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+    const bearerToken = req.headers.authorization.split(' ')[1];
+    if (bearerToken !== 'null' && bearerToken !== 'undefined' && bearerToken !== '') {
+      token = bearerToken;
+    }
+  }
+
   if (!token) return res.status(401).json({ error: 'No autorizado' });
 
   try {
@@ -34,7 +101,7 @@ const authMiddleware = async (req, res, next) => {
 };
 
 // Rutas de Autenticación
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', registerLimiter, async (req, res) => {
   const { nombre, correo, contrasena, rol, nombreTienda, telefono } = req.body;
   if (!nombre || !correo || !contrasena || !rol) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
@@ -86,10 +153,25 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     if (!match) return res.status(401).json({ error: 'Contraseña incorrecta' });
 
     const token = jwt.sign({ id: user.id, rol: user.rol }, JWT_SECRET, { expiresIn: '1d' });
+    
+    // Inyectamos el JWT en una cookie httpOnly segura
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 1 día
+    });
+
     res.json({ token, user: { id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol, puedeAlistar: user.puedeAlistar } });
   } catch (error) {
     res.status(500).json({ error: 'Error al iniciar sesión' });
   }
+});
+
+// Ruta para cerrar sesión (destruye la cookie)
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('token');
+  res.json({ message: 'Sesión cerrada correctamente' });
 });
 
 app.get('/health', (_req, res) => {
@@ -125,7 +207,7 @@ const calcularDistancia = (lat1, lon1, lat2, lon2) => {
 };
 
 // Rutas de negocio (Administración)
-app.get('/api/productos', authMiddleware, async (req, res) => {
+app.get('/api/productos', authMiddleware, cacheMiddleware(5), async (req, res) => {
   const distribuidora = await getMyDistribuidora(req.user.id);
   if (!distribuidora) return res.status(404).json({ error: 'No tienes una distribuidora asignada' });
 
@@ -229,7 +311,7 @@ app.delete('/api/productos/:id', authMiddleware, async (req, res) => {
   }
 });
 
-app.get('/api/pedidos', authMiddleware, async (req, res) => {
+app.get('/api/pedidos', authMiddleware, cacheMiddleware(5), async (req, res) => {
   const userDetails = await prisma.usuario.findUnique({ where: { id: req.user.id } });
   
   if (req.user.rol !== 'distribuidor' && req.user.rol !== 'administrador') {
@@ -547,7 +629,7 @@ app.patch('/api/conductor/entregas/:pedidoId/entregado', authMiddleware, async (
 });
 
 // Ajustes de Distribuidora
-app.get('/api/distribuidora', authMiddleware, async (req, res) => {
+app.get('/api/distribuidora', authMiddleware, cacheMiddleware(60), async (req, res) => {
   const distribuidora = await getMyDistribuidora(req.user.id);
   if (!distribuidora) return res.status(404).json({ error: 'Distribuidora no encontrada' });
   res.json(distribuidora);
@@ -596,7 +678,7 @@ app.patch('/api/distribuidora', authMiddleware, async (req, res) => {
 });
 
 // Gestión de Equipo (Asesores)
-app.get('/api/equipo', authMiddleware, async (req, res) => {
+app.get('/api/equipo', authMiddleware, cacheMiddleware(10), async (req, res) => {
   const userDetails = await prisma.usuario.findUnique({ where: { id: req.user.id } });
   
   if (req.user.rol !== 'distribuidor' && req.user.rol !== 'administrador') {
@@ -744,7 +826,7 @@ app.post('/api/superadmin/distribuidoras', authMiddleware, async (req, res) => {
 
 // Rutas Públicas (Página Tendero)
 
-app.get('/api/tiendas/frecuentes', async (req, res) => {
+app.get('/api/tiendas/frecuentes', cacheMiddleware(30), async (req, res) => {
   const { telefono } = req.query;
   if (!telefono) return res.json([]);
 
@@ -790,7 +872,7 @@ app.get('/api/tiendas/frecuentes', async (req, res) => {
   }
 });
 
-app.get('/api/tiendas/directorio', async (req, res) => {
+app.get('/api/tiendas/directorio', cacheMiddleware(60), async (req, res) => {
   try {
     // Solo mostramos las que tengan productos para no mostrar tiendas vacías
     const tiendas = await prisma.distribuidora.findMany({
@@ -820,7 +902,7 @@ app.get('/api/tiendas/directorio', async (req, res) => {
   }
 });
 
-app.get('/api/tienda/:slug', async (req, res) => {
+app.get('/api/tienda/:slug', cacheMiddleware(15), async (req, res) => {
   const { slug } = req.params;
   
   try {
@@ -1167,7 +1249,7 @@ app.post('/api/admin/torre-control/ordenar-manual/:conductorId', authMiddleware,
 // ==========================================
 
 // 1. Obtener todos los tickets
-app.get('/api/tickets', authMiddleware, async (req, res) => {
+app.get('/api/tickets', authMiddleware, cacheMiddleware(5), async (req, res) => {
   const user = await prisma.usuario.findUnique({ where: { id: req.user.id } });
   
   if (user.rol !== 'administrador' && user.rol !== 'distribuidor' && !user.puedeAtenderTickets) {
